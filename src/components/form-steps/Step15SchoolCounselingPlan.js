@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Shield, CheckCircle, AlertCircle } from 'lucide-react';
+import { Heart, CheckCircle, AlertCircle, FileText, Shield, Users, Clock, UserCheck } from 'lucide-react';
 import formQuestionsData from '../../data/formQuestions.json';
 
-const Step15SchoolCounselingPlan = ({ stepData, updateStepData, isActive }) => {
+export default function Step15SchoolCounselingPlan({ stepData, updateStepData }) {
   const [questions] = useState(() => {
     const step = formQuestionsData.steps.find(s => s.key === 'counselingPlan');
     return step ? step.questions : [];
@@ -45,45 +45,37 @@ const Step15SchoolCounselingPlan = ({ stepData, updateStepData, isActive }) => {
       );
     }
 
-    if (question.type === 'text') {
-      return (
-        <input
-          type="text"
+    return (
+      <div>
+        <label htmlFor={question.id} className="block text-sm font-medium text-gray-700 mb-2">
+          {question.title}
+        </label>
+        <textarea
           id={question.id}
           value={value}
           onChange={(e) => handleInputChange(question.id, e.target.value)}
           placeholder={question.placeholder}
+          rows={4}
           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
-      );
-    }
-
-    return (
-      <textarea
-        id={question.id}
-        value={value}
-        onChange={(e) => handleInputChange(question.id, e.target.value)}
-        placeholder={question.placeholder}
-        rows={4}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-      />
+      </div>
     );
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-sky-100 border-2 border-blue-200 rounded-xl p-6">
+      <div className="bg-gradient-to-r from-fuchsia-50 to-pink-100 border-2 border-fuchsia-200 rounded-xl p-6">
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
-            <Shield className="w-6 h-6 text-white" />
+          <div className="w-12 h-12 bg-fuchsia-500 rounded-full flex items-center justify-center">
+            <Heart className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-blue-800">
+            <h2 className="text-2xl font-bold text-fuchsia-800">
               Step 15: School Counseling Plan
             </h2>
-            <p className="text-blue-600">
-              Comprehensive school counseling program coordination
+            <p className="text-fuchsia-600">
+              Comprehensive school counseling program and services
             </p>
           </div>
         </div>
@@ -91,23 +83,23 @@ const Step15SchoolCounselingPlan = ({ stepData, updateStepData, isActive }) => {
 
       {/* Information Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-fuchsia-50 border border-fuchsia-200 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircle className="w-5 h-5 text-blue-600" />
-            <span className="font-semibold text-blue-800">Overview</span>
+            <CheckCircle className="w-5 h-5 text-fuchsia-600" />
+            <span className="font-semibold text-fuchsia-800">NYSED Requirements</span>
           </div>
-          <p className="text-blue-700 text-sm">
-            This step establishes protocols for Comprehensive school counseling program coordination_LOWER.
+          <p className="text-fuchsia-700 text-sm">
+            NYSED state law requires certified school counselors to design and develop comprehensive school counseling programs in collaboration with school administration and staff.
           </p>
         </div>
         
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
-            <AlertCircle className="w-5 h-5 text-green-600" />
-            <span className="font-semibold text-green-800">Requirements</span>
+            <AlertCircle className="w-5 h-5 text-blue-600" />
+            <span className="font-semibold text-blue-800">Program Coordinator</span>
           </div>
-          <p className="text-green-700 text-sm">
-            Ensure all required fields are completed and protocols are clearly documented.
+          <p className="text-blue-700 text-sm">
+            The counseling plan coordinator is responsible for developing the plan, attending OSYD professional development, and revising based on student needs and feedback.
           </p>
         </div>
       </div>
@@ -139,17 +131,15 @@ const Step15SchoolCounselingPlan = ({ stepData, updateStepData, isActive }) => {
       </div>
 
       {/* Footer Alert */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-fuchsia-50 border border-fuchsia-200 rounded-lg p-4">
         <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-blue-600" />
-          <span className="font-semibold text-blue-800">Completion</span>
+          <Heart className="w-5 h-5 text-fuchsia-600" />
+          <span className="font-semibold text-fuchsia-800">Ready to Proceed?</span>
         </div>
-        <p className="text-blue-700 text-sm mt-2">
-          Ensure all protocols are clearly documented and staff are properly trained to implement the required procedures.
+        <p className="text-fuchsia-700 text-sm mt-2">
+          Once you've confirmed your school's comprehensive counseling program status, you can proceed to submit your completed School Plan Form for administrative review.
         </p>
       </div>
     </div>
   );
-};
-
-export default Step15SchoolCounselingPlan;
+}
