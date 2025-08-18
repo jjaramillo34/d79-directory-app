@@ -1,0 +1,1107 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { 
+  Users, 
+  UserPlus, 
+  ArrowLeft, 
+  Edit, 
+  Trash2, 
+  Shield, 
+  Building2, 
+  Calendar,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Loader2,
+  BarChart3,
+  Info,
+  User,
+  Download,
+  RefreshCw
+} from 'lucide-react';
+import { AgGridReact } from 'ag-grid-react';
+import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
+
+// Register AG Grid modules
+ModuleRegistry.registerModules([AllCommunityModule]);
+
+export default function AdminUsersPage() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    level: 3,
+    schoolName: '',
+    title: '',
+    isActive: true
+  });
+  
+  // Advanced User Management States
+  const [showAdvancedModal, setShowAdvancedModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showAuditModal, setShowAuditModal] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [bulkAction, setBulkAction] = useState('');
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [permissionData, setPermissionData] = useState({
+    canEditUsers: false,
+    canDeleteUsers: false,
+    canManagePermissions: false,
+    canViewAuditLogs: false,
+    canBulkActions: false
+  });
+
+  // AG Grid configuration
+  const [gridApi, setGridApi] = useState(null);
+  const [gridColumnApi, setGridColumnApi] = useState(null);
+
+  // Handle authentication
+  useEffect(() => {
+    if (status === 'loading') return; // Still loading
+    
+    if (!session) {
+      router.push('/login');
+      return;
+    }
+
+    // Check if user has admin permission (Level 4)
+    if (session.user.level < 4) {
+      router.push('/dashboard');
+      return;
+    }
+  }, [session, status, router]);
+
+  // Fetch users when component mounts
+  useEffect(() => {
+    if (session && session.user.level >= 4) {
+      fetchUsers();
+    }
+  }, [session]);
+
+  // Fetch audit logs when audit modal opens
+  useEffect(() => {
+    if (showAuditModal) {
+      fetchAuditLogs();
+    }
+  }, [showAuditModal]);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/users', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Fetched users:', data.users);
+      setUsers(data.users || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      // Show empty state if API fails
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateUser = () => {
+    setEditingUser(null);
+    setFormData({
+      name: '',
+      email: '',
+      level: 3,
+      schoolName: '',
+      title: '',
+      isActive: true
+    });
+    setShowModal(true);
+  };
+
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+    setFormData({
+      name: user.name,
+      email: user.email,
+      level: user.level,
+      schoolName: user.schoolName,
+      title: user.title || '',
+      isActive: user.isActive
+    });
+    setShowModal(true);
+  };
+
+  const handleDeleteUser = async (user) => {
+    if (!confirm(`Are you sure you want to delete ${user.name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/users', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user._id }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Refresh the users list
+      fetchUsers();
+      alert('User deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Error deleting user. Please try again.');
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.name.trim() || !formData.email.trim()) {
+      alert('Name and email are required');
+      return;
+    }
+
+    try {
+      const url = editingUser ? '/api/users' : '/api/users/create';
+      const method = editingUser ? 'PUT' : 'POST';
+      const body = editingUser 
+        ? { userId: editingUser._id, ...formData }
+        : formData;
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Refresh the users list
+      fetchUsers();
+      setShowModal(false);
+      alert(editingUser ? 'User updated successfully!' : 'User updated successfully!');
+    } catch (error) {
+      console.error('Error saving user:', error);
+      alert('Error saving user. Please try again.');
+    }
+  };
+
+  // Advanced User Management Functions
+  const handleBulkAction = async () => {
+    if (selectedUsers.length === 0 || !bulkAction) {
+      alert('Please select users and choose an action');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/users/bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userIds: selectedUsers.map(u => u._id),
+          action: bulkAction
+        }),
+      });
+
+      if (response.ok) {
+        await fetchUsers();
+        setShowBulkModal(false);
+        setSelectedUsers([]);
+        setBulkAction('');
+        alert('Bulk action completed successfully!');
+      }
+    } catch (error) {
+      console.error('Error performing bulk action:', error);
+      alert('Error performing bulk action. Please try again.');
+    }
+  };
+
+  const handlePermissionUpdate = async (userId, permissions) => {
+    try {
+      const response = await fetch(`/api/users/${userId}/permissions`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ permissions }),
+      });
+
+      if (response.ok) {
+        await fetchUsers();
+        alert('User permissions updated successfully!');
+      }
+    } catch (error) {
+      console.error('Error updating permissions:', error);
+      alert('Error updating permissions. Please try again.');
+    }
+  };
+
+  const fetchAuditLogs = async () => {
+    try {
+      const response = await fetch('/api/users/audit-logs');
+      if (response.ok) {
+        const data = await response.json();
+        setAuditLogs(data.logs || []);
+      }
+    } catch (error) {
+      console.error('Error fetching audit logs:', error);
+    }
+  };
+
+  const toggleUserSelection = (user) => {
+    setSelectedUsers(prev => 
+      prev.find(u => u._id === user._id)
+        ? prev.filter(u => u._id !== user._id)
+        : [...prev, user]
+    );
+  };
+
+  // AG Grid event handlers
+  const onGridReady = (params) => {
+    setGridApi(params.api);
+    setGridColumnApi(params.columnApi);
+  };
+
+  // AG Grid column definitions
+  const columnDefs = [
+    {
+      headerName: '',
+      field: 'select',
+      headerCheckboxSelection: true,
+      checkboxSelection: true,
+      width: 50,
+      pinned: 'left',
+      sortable: false,
+      filter: false,
+      resizable: false
+    },
+    {
+      headerName: 'Name',
+      field: 'name',
+      sortable: true,
+      filter: true,
+      resizable: true,
+      width: 200,
+      cellRenderer: (params) => (
+        <div className="font-medium text-gray-900">{params.value}</div>
+      )
+    },
+    {
+      headerName: 'Email',
+      field: 'email',
+      sortable: true,
+      filter: true,
+      resizable: true,
+      width: 250,
+      cellRenderer: (params) => (
+        <div className="text-sm text-gray-700">{params.value}</div>
+      )
+    },
+    {
+      headerName: 'Level',
+      field: 'level',
+      sortable: true,
+      filter: true,
+      resizable: true,
+      width: 180,
+      cellRenderer: (params) => getLevelBadge(params.value)
+    },
+    {
+      headerName: 'School',
+      field: 'schoolName',
+      sortable: true,
+      filter: true,
+      resizable: true,
+      width: 200,
+      cellRenderer: (params) => (
+        <div className="flex items-center text-sm text-gray-700">
+          <Building2 className="w-4 h-4 mr-2 text-gray-400" />
+          {params.value || '-'}
+        </div>
+      )
+    },
+    {
+      headerName: 'Title',
+      field: 'title',
+      sortable: true,
+      filter: true,
+      resizable: true,
+      width: 180,
+      cellRenderer: (params) => (
+        <div className="flex items-center text-sm text-gray-700">
+          <User className="w-4 h-4 mr-2 text-gray-400" />
+          {params.value || '-'}
+        </div>
+      )
+    },
+    {
+      headerName: 'Status',
+      field: 'isActive',
+      sortable: true,
+      filter: true,
+      resizable: true,
+      width: 120,
+      cellRenderer: (params) => getStatusBadge(params.value)
+    },
+    {
+      headerName: 'Created',
+      field: 'createdAt',
+      sortable: true,
+      filter: true,
+      resizable: true,
+      width: 150,
+      cellRenderer: (params) => (
+        <div className="flex items-center text-sm text-gray-700">
+          <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+          {new Date(params.value).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          })}
+        </div>
+      )
+    },
+    {
+      headerName: 'Actions',
+      field: 'actions',
+      sortable: false,
+      filter: false,
+      resizable: false,
+      width: 150,
+      cellRenderer: (params) => (
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleEditUser(params.data)}
+            className="inline-flex items-center px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium rounded-md transition-colors duration-200"
+          >
+            <Edit className="w-3 h-3 mr-1" />
+            Edit
+          </button>
+          <button
+            onClick={() => handleDeleteUser(params.data)}
+            className="inline-flex items-center px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded-md transition-colors duration-200"
+          >
+            <Trash2 className="w-3 h-3 mr-1" />
+            Delete
+          </button>
+        </div>
+      )
+    }
+  ];
+
+  // AG Grid default column properties
+  const defaultColDef = {
+    sortable: true,
+    filter: true,
+    resizable: true,
+    minWidth: 100,
+    flex: 1
+  };
+
+  // AG Grid row selection
+  const onSelectionChanged = () => {
+    const selectedRows = gridApi?.getSelectedRows() || [];
+    setSelectedUsers(selectedRows);
+  };
+
+  const getLevelBadge = (level) => {
+    const levelConfig = {
+      1: { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Basic User' },
+      2: { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'Staff' },
+      3: { color: 'bg-indigo-100 text-indigo-800 border-indigo-200', label: 'Principal' },
+      4: { color: 'bg-amber-100 text-amber-800 border-amber-200', label: 'Admin' }
+    };
+    
+    const config = levelConfig[level] || levelConfig[1];
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border ${config.color}`}>
+        <Shield className="w-3 h-3" />
+        Level {level} ({config.label})
+      </span>
+    );
+  };
+
+  const getStatusBadge = (isActive) => {
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border ${
+        isActive 
+          ? 'bg-green-100 text-green-800 border-green-200' 
+          : 'bg-red-100 text-red-800 border-red-200'
+      }`}>
+        {isActive ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+        {isActive ? 'Active' : 'Inactive'}
+      </span>
+    );
+  };
+
+  // Don't render until session is loaded
+  if (status === 'loading' || !session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-transparent border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+     return (
+     <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4">
+            <div className="mb-4 lg:mb-0">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">User Management</h1>
+              <p className="text-gray-600">Manage user accounts and permissions</p>
+              <div className="flex items-center mt-2">
+                <span className="text-sm text-gray-500">Logged in as: </span>
+                <span className="ml-2 inline-flex items-center px-2 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-md border border-amber-200">
+                  <Shield className="w-3 h-3 mr-1" />
+                  {session?.user?.name} (Level {session?.user?.level})
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCreateUser}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                Add User
+              </button>
+              
+              {/* Advanced User Management Actions */}
+              <button
+                onClick={() => setShowAdvancedModal(true)}
+                className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                title="Advanced User Management"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                Advanced
+              </button>
+              
+              <button
+                onClick={() => setShowBulkModal(true)}
+                className="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                title="Bulk User Management"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Bulk Actions
+              </button>
+              
+              <button
+                onClick={() => setShowAuditModal(true)}
+                className="inline-flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                title="User Activity Audit"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Audit Log
+              </button>
+              
+              <Link href="/dashboard">
+                <button className="inline-flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors duration-200">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Dashboard
+                </button>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* User Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Users</p>
+                <p className="text-2xl font-bold text-gray-900">{users.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active Users</p>
+                <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.isActive).length}</p>
+              </div>
+            </div>
+          </div>
+          
+                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+             <div className="flex items-center">
+               <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                 <Shield className="w-5 h-5 text-indigo-600" />
+               </div>
+               <div>
+                 <p className="text-sm font-medium text-gray-600">Principals</p>
+                 <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.level === 3).length}</p>
+               </div>
+             </div>
+           </div>
+           
+           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+             <div className="flex items-center">
+               <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                 <User className="w-5 h-5 text-purple-600" />
+               </div>
+               <div>
+                 <p className="text-sm font-medium text-gray-600">Staff with Titles</p>
+                 <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.title && u.title.trim() !== '').length}</p>
+               </div>
+             </div>
+           </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mr-3">
+                <Shield className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Admins</p>
+                <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.level === 4).length}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Users Table */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 overflow-hidden">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+              <Users className="w-5 h-5 mr-2 text-blue-600" />
+              District 79 Users ({users.length})
+            </h2>
+            <div className="flex gap-2 mt-2 lg:mt-0">
+              <button
+                onClick={() => gridApi?.exportDataAsCsv()}
+                className="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </button>
+              <button
+                onClick={() => gridApi?.setFilterModel(null)}
+                className="inline-flex items-center px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Clear Filters
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="w-8 h-8 border-2 border-transparent border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading users...</p>
+            </div>
+          ) : users.length === 0 ? (
+            <div className="text-center py-12 text-gray-600">
+              <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <p>No users found.</p>
+            </div>
+          ) : (
+                         <div className="ag-theme-alpine w-full" style={{ height: '600px' }}>
+              <AgGridReact
+                columnDefs={columnDefs}
+                rowData={users}
+                defaultColDef={defaultColDef}
+                onGridReady={onGridReady}
+                onSelectionChanged={onSelectionChanged}
+                rowSelection="multiple"
+                pagination={true}
+                paginationPageSize={10}
+                domLayout="normal"
+                suppressRowClickSelection={true}
+                suppressCellFocus={true}
+                className="w-full"
+                rowHeight={60}
+                headerHeight={50}
+                                 theme="legacy"
+              />
+            </div>
+          )}
+        </div>
+
+
+
+        {/* Enhanced User Management Features Section */}
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6 mt-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h3 className="text-green-800 font-bold text-lg mb-3 flex items-center">
+                <CheckCircle className="w-5 h-5 mr-2" />
+                User Management Features (Now Available!)
+              </h3>
+              <p className="text-green-700 text-sm mb-4">
+                Advanced user management capabilities are now fully implemented and ready to use. Take advantage of these powerful tools to manage your user base effectively.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex items-center text-green-700 text-sm">
+                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                  ✅ Edit user levels and permissions
+                </div>
+                <div className="flex items-center text-green-700 text-sm">
+                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                  ✅ Activate/deactivate user accounts
+                </div>
+                <div className="flex items-center text-green-700 text-sm">
+                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                  ✅ Bulk user management tools
+                </div>
+                <div className="flex items-center text-green-700 text-sm">
+                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                  ✅ User activity audit logs
+                </div>
+              </div>
+            </div>
+            <div className="ml-4 flex-shrink-0">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+            </div>
+          </div>
+          
+          {/* How to Use Section */}
+          <div className="mt-6 pt-4 border-t border-green-200">
+            <h4 className="text-green-800 font-semibold text-sm mb-2 flex items-center">
+              <Info className="w-4 h-4 mr-2" />
+              How to Use These Features
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-green-600">
+              <span>• Click "Advanced" for permissions & status</span>
+              <span>• Use "Bulk Actions" for multiple users</span>
+              <span>• View "Audit Log" for activity tracking</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal for Create/Edit User */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-8 w-full max-w-lg max-h-90vh overflow-y-auto">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center">
+                <UserPlus className="w-6 h-6 mr-2 text-blue-600" />
+                {editingUser ? 'Edit User' : 'Create New User'}
+              </h3>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    required
+                    disabled={editingUser}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      editingUser ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Level
+                  </label>
+                  <select
+                    value={formData.level}
+                    onChange={(e) => setFormData({...formData, level: parseInt(e.target.value)})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value={1}>Level 1 - Basic User</option>
+                    <option value={2}>Level 2 - Staff</option>
+                    <option value={3}>Level 3 - Principal</option>
+                    <option value={4}>Level 4 - Admin</option>
+                  </select>
+                </div>
+
+                                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                     School Name
+                   </label>
+                   <input
+                     type="text"
+                     value={formData.schoolName}
+                     onChange={(e) => setFormData({...formData, schoolName: e.target.value})}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   />
+                 </div>
+
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                     Professional Title
+                   </label>
+                   <input
+                     type="text"
+                     value={formData.title}
+                     onChange={(e) => setFormData({...formData, title: e.target.value})}
+                     placeholder="e.g., Principal, Assistant Principal, Teacher, Staff"
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   />
+                 </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.isActive}
+                    onChange={(e) => setFormData({...formData, isActive: e.target.checked})}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label className="ml-2 text-sm font-medium text-gray-700">
+                    Active User
+                  </label>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                  >
+                    {editingUser ? 'Update User' : 'Create User'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Advanced User Management Modal */}
+        {showAdvancedModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-8 w-full max-w-4xl max-h-90vh overflow-y-auto">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center">
+                <Shield className="w-6 h-6 mr-2 text-indigo-600" />
+                Advanced User Management
+              </h3>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* User Permissions Management */}
+                <div className="space-y-4">
+                  <h4 className="text-lg font-semibold text-gray-800">User Permissions</h4>
+                  {users.map(user => (
+                    <div key={user._id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="font-medium text-gray-900">{user.name}</p>
+                          <p className="text-sm text-gray-600">{user.email}</p>
+                        </div>
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {user.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                            onChange={(e) => handlePermissionUpdate(user._id, { canEditUsers: e.target.checked })}
+                          />
+                          <span className="ml-2 text-sm text-gray-700">Can Edit Users</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                            onChange={(e) => handlePermissionUpdate(user._id, { canDeleteUsers: e.target.checked })}
+                          />
+                          <span className="ml-2 text-sm text-gray-700">Can Delete Users</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                            onChange={(e) => handlePermissionUpdate(user._id, { canManagePermissions: e.target.checked })}
+                          />
+                          <span className="ml-2 text-sm text-gray-700">Can Manage Permissions</span>
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Account Status Management */}
+                <div className="space-y-4">
+                  <h4 className="text-lg font-semibold text-gray-800">Account Status Management</h4>
+                  {users.map(user => (
+                    <div key={user._id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="font-medium text-gray-900">{user.name}</p>
+                          <p className="text-sm text-gray-600">{user.email}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">User Level</label>
+                          <select
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            value={user.level}
+                            onChange={(e) => handlePermissionUpdate(user._id, { level: parseInt(e.target.value) })}
+                          >
+                            <option value={1}>Level 1 - Basic User</option>
+                            <option value={2}>Level 2 - Staff</option>
+                            <option value={3}>Level 3 - Principal</option>
+                            <option value={4}>Level 4 - Admin</option>
+                          </select>
+                        </div>
+                        
+                                                 <div>
+                           <label className="block text-sm font-medium text-gray-700 mb-1">Professional Title</label>
+                           <input
+                             type="text"
+                             className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                             value={user.title || ''}
+                             onChange={(e) => handlePermissionUpdate(user._id, { title: e.target.value })}
+                             placeholder="e.g., Principal, Teacher, Staff"
+                           />
+                         </div>
+                         
+                         <div className="flex items-center">
+                           <input
+                             type="checkbox"
+                             className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                             checked={user.isActive}
+                             onChange={(e) => handlePermissionUpdate(user._id, { isActive: e.target.checked })}
+                           />
+                           <span className="ml-2 text-sm text-gray-700">Active Account</span>
+                         </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedModal(false)}
+                  className="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Actions Modal */}
+        {showBulkModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-8 w-full max-w-2xl max-h-90vh overflow-y-auto">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center">
+                <Users className="w-6 h-6 mr-2 text-purple-600" />
+                Bulk User Management
+              </h3>
+              
+              <div className="space-y-6">
+                {/* User Selection */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Select Users</h4>
+                  <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                    {users.map(user => (
+                      <label key={user._id} className="flex items-center p-2 hover:bg-gray-50 rounded">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                          checked={selectedUsers.find(u => u._id === user._id) ? true : false}
+                          onChange={() => toggleUserSelection(user)}
+                        />
+                                                 <span className="ml-3 text-sm text-gray-900">{user.name}</span>
+                         <span className="ml-2 text-xs text-gray-500">({user.email})</span>
+                         {user.title && (
+                           <span className="ml-2 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                             {user.title}
+                           </span>
+                         )}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bulk Action Selection */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Choose Action</h4>
+                  <select
+                    value={bulkAction}
+                    onChange={(e) => setBulkAction(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  >
+                    <option value="">Select an action...</option>
+                    <option value="activate">Activate Selected Users</option>
+                    <option value="deactivate">Deactivate Selected Users</option>
+                    <option value="delete">Delete Selected Users</option>
+                    <option value="level_up">Promote to Next Level</option>
+                    <option value="level_down">Demote to Previous Level</option>
+                  </select>
+                </div>
+
+                {/* Action Preview */}
+                {selectedUsers.length > 0 && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">
+                      <strong>Selected:</strong> {selectedUsers.length} user(s)
+                    </p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      {selectedUsers.map(u => u.name).join(', ')}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBulkModal(false);
+                    setSelectedUsers([]);
+                    setBulkAction('');
+                  }}
+                  className="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkAction}
+                  disabled={selectedUsers.length === 0 || !bulkAction}
+                  className="px-6 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                >
+                  Execute Bulk Action
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Audit Log Modal */}
+        {showAuditModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-8 w-full max-w-6xl max-h-90vh overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-semibold text-gray-900 flex items-center">
+                  <BarChart3 className="w-6 h-6 mr-2 text-amber-600" />
+                  User Activity Audit Log
+                </h3>
+                <button
+                  onClick={fetchAuditLogs}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                >
+                  Refresh Logs
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {auditLogs.length === 0 ? (
+                  <div className="text-center py-12 text-gray-600">
+                    <BarChart3 className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                    <p>No audit logs found. Click "Refresh Logs" to load recent activity.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Timestamp</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">User</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Action</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Details</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">IP Address</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {auditLogs.map((log, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="p-3 text-sm text-gray-600">
+                              {new Date(log.timestamp).toLocaleString()}
+                            </td>
+                            <td className="p-3 text-sm font-medium text-gray-900">{log.userName}</td>
+                            <td className="p-3 text-sm text-gray-700">{log.action}</td>
+                            <td className="p-3 text-sm text-gray-700">{log.details}</td>
+                            <td className="p-3 text-sm text-gray-600">{log.ipAddress || 'N/A'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setShowAuditModal(false)}
+                  className="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

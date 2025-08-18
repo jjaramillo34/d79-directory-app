@@ -1,0 +1,19 @@
+# MongoDB Connection
+MONGODB_URI=mongodb://localhost:27017/d79-directory
+
+# NextAuth Configuration  
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=d79-super-secret-key-for-development-only-2024
+
+# Google OAuth (Replace with your real values from Google Cloud Console)
+GOOGLE_CLIENT_ID=1038566368626-ko7...
+GOOGLE_CLIENT_SECRET=your-real-google-client-secret-here
+
+# Fix SSL certificate verification issue on Windows (DEVELOPMENT ONLY)
+NODE_TLS_REJECT_UNAUTHORIZED=0
+
+# Instructions:
+# 1. Copy this file to .env.local
+# 2. Replace GOOGLE_CLIENT_SECRET with your real value from Google Cloud Console
+# 3. The NODE_TLS_REJECT_UNAUTHORIZED=0 fixes the SSL certificate issue on Windows
+# 4. REMOVE NODE_TLS_REJECT_UNAUTHORIZED=0 in production for security

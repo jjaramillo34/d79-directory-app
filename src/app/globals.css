@@ -1,0 +1,504 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Print styles for form viewer */
+@media print {
+  /* Hide non-printable elements */
+  .print-break-inside-avoid {
+    break-inside: avoid;
+  }
+  
+  /* Ensure proper page breaks */
+  .print-break-inside-avoid {
+    page-break-inside: avoid;
+  }
+  
+  /* Force page breaks before elements */
+  .print-break {
+    page-break-before: always;
+  }
+  
+  /* Prevent page breaks inside elements */
+  .print-no-break {
+    page-break-inside: avoid;
+  }
+  
+  /* Force page breaks after elements */
+  .print-break-after {
+    page-break-after: always;
+  }
+  
+  /* Remove shadows and borders for cleaner print */
+  .print-shadow-none {
+    box-shadow: none !important;
+  }
+  
+  /* Ensure text is readable */
+  .print-text-black {
+    color: black !important;
+  }
+  
+  /* Remove background colors for better print */
+  .print-bg-white {
+    background-color: white !important;
+  }
+  
+  /* Ensure proper spacing */
+  .print-space-y-4 > * + * {
+    margin-top: 1rem !important;
+  }
+  
+  /* Hide print button and close button */
+  button[onclick*="window.print()"],
+  button[onclick*="setShowFormViewer(false)"],
+  .print-hidden {
+    display: none !important;
+  }
+  
+  /* Ensure modal content is visible */
+  .fixed.inset-0 {
+    position: static !important;
+  }
+  
+  .bg-black.bg-opacity-50 {
+    background: none !important;
+  }
+  
+  .max-h-90vh {
+    max-height: none !important;
+  }
+  
+  .overflow-hidden {
+    overflow: visible !important;
+  }
+  
+  /* Ensure proper text sizing */
+  .text-3xl {
+    font-size: 24px !important;
+  }
+  
+  .text-2xl {
+    font-size: 20px !important;
+  }
+  
+  .text-lg {
+    font-size: 16px !important;
+  }
+  
+  .text-sm {
+    font-size: 12px !important;
+  }
+  
+  /* Ensure proper margins */
+  .p-6 {
+    padding: 1.5rem !important;
+  }
+  
+  .mb-6 {
+    margin-bottom: 1.5rem !important;
+  }
+  
+  .mb-4 {
+    margin-bottom: 1rem !important;
+  }
+  
+  .mb-3 {
+    margin-bottom: 0.75rem !important;
+  }
+  
+  .mb-2 {
+    margin-bottom: 0.5rem !important;
+  }
+  
+  .mt-2 {
+    margin-top: 0.5rem !important;
+  }
+  
+  /* Ensure proper spacing between elements */
+  .space-y-8 > * + * {
+    margin-top: 2rem !important;
+  }
+  
+  .space-y-6 > * + * {
+    margin-top: 1.5rem !important;
+  }
+  
+  .space-y-3 > * + * {
+    margin-top: 0.75rem !important;
+  }
+  
+  /* Ensure proper gap spacing */
+  .gap-6 {
+    gap: 1.5rem !important;
+  }
+  
+  .gap-4 {
+    gap: 1rem !important;
+  }
+  
+  .gap-3 {
+    gap: 0.75rem !important;
+  }
+  
+  .gap-2 {
+    gap: 0.5rem !important;
+  }
+  
+  /* Ensure proper flexbox behavior */
+  .flex {
+    display: flex !important;
+  }
+  
+  .items-center {
+    align-items: center !important;
+  }
+  
+  .justify-center {
+    justify-content: center !important;
+  }
+  
+  .justify-between {
+    justify-content: space-between !important;
+  }
+  
+  /* Ensure proper grid behavior */
+  .grid {
+    display: grid !important;
+  }
+  
+  .grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+  
+  .md-grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  
+  /* Ensure proper rounded corners */
+  .rounded-xl {
+    border-radius: 0.75rem !important;
+  }
+  
+  .rounded-lg {
+    border-radius: 0.5rem !important;
+  }
+  
+  .rounded {
+    border-radius: 0.25rem !important;
+  }
+  
+  .rounded-full {
+    border-radius: 9999px !important;
+  }
+  
+  /* Ensure proper borders */
+  .border-2 {
+    border-width: 2px !important;
+  }
+  
+  .border {
+    border-width: 1px !important;
+  }
+  
+  .border-blue-200 {
+    border-color: #bfdbfe !important;
+  }
+  
+  .border-gray-200 {
+    border-color: #e5e7eb !important;
+  }
+  
+  .border-gray-300 {
+    border-color: #d1d5db !important;
+  }
+  
+  /* Ensure proper background colors */
+  .bg-gradient-to-r {
+    background-image: linear-gradient(to right, var(--tw-gradient-stops)) !important;
+  }
+  
+  .from-blue-50 {
+    --tw-gradient-from: #eff6ff !important;
+  }
+  
+  .to-sky-100 {
+    --tw-gradient-to: #e0f2fe !important;
+  }
+  
+  .from-green-500 {
+    --tw-gradient-from: #10b981 !important;
+  }
+  
+  .to-emerald-600 {
+    --tw-gradient-to: #059669 !important;
+  }
+  
+  .bg-blue-500 {
+    background-color: #3b82f6 !important;
+  }
+  
+  .bg-green-500 {
+    background-color: #10b981 !important;
+  }
+  
+  .bg-gray-400 {
+    background-color: #9ca3af !important;
+  }
+  
+  .bg-gray-50 {
+    background-color: #f9fafb !important;
+  }
+  
+  .bg-white {
+    background-color: white !important;
+  }
+  
+  .bg-green-100 {
+    background-color: #dcfce7 !important;
+  }
+  
+  .bg-gray-100 {
+    background-color: #f3f4f6 !important;
+  }
+  
+  /* Ensure proper text colors */
+  .text-blue-800 {
+    color: #1e40af !important;
+  }
+  
+  .text-blue-600 {
+    color: #2563eb !important;
+  }
+  
+  .text-blue-700 {
+    color: #1d4ed8 !important;
+  }
+  
+  .text-green-600 {
+    color: #059669 !important;
+  }
+  
+  .text-green-800 {
+    color: #065f46 !important;
+  }
+  
+  .text-gray-800 {
+    color: #1f2937 !important;
+  }
+  
+  .text-gray-700 {
+    color: #374151 !important;
+  }
+  
+  .text-gray-600 {
+    color: #4b5563 !important;
+  }
+  
+  .text-white {
+    color: white !important;
+  }
+  
+  /* Ensure proper font weights */
+  .font-bold {
+    font-weight: 700 !important;
+  }
+  
+  .font-semibold {
+    font-weight: 600 !important;
+  }
+  
+  .font-medium {
+    font-weight: 500 !important;
+  }
+  
+  /* Ensure proper icon sizing */
+  .w-20 {
+    width: 5rem !important;
+  }
+  
+  .h-20 {
+    height: 5rem !important;
+  }
+  
+  .w-12 {
+    width: 3rem !important;
+  }
+  
+  .h-12 {
+    height: 3rem !important;
+  }
+  
+  .w-10 {
+    width: 2.5rem !important;
+  }
+  
+  .h-10 {
+    height: 2.5rem !important;
+  }
+  
+  .w-6 {
+    width: 1.5rem !important;
+  }
+  
+  .h-6 {
+    height: 1.5rem !important;
+  }
+  
+  .w-5 {
+    width: 1.25rem !important;
+  }
+  
+  .h-5 {
+    height: 1.25rem !important;
+  }
+  
+  .w-4 {
+    width: 1rem !important;
+  }
+  
+  .h-4 {
+    height: 1rem !important;
+  }
+  
+  .w-3 {
+    width: 0.75rem !important;
+  }
+  
+  .h-3 {
+    height: 0.75rem !important;
+  }
+  
+  .w-2 {
+    width: 0.5rem !important;
+  }
+  
+  .h-2 {
+    height: 0.5rem !important;
+  }
+  
+  /* Additional print optimizations */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Ensure proper page margins */
+  @page {
+    margin: 1in;
+    size: A4;
+  }
+  
+  /* Force background colors to print */
+  .bg-blue-50, .bg-sky-100, .bg-green-100, .bg-gray-50, .bg-white {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Ensure proper spacing for print */
+  .space-y-8 > * + * {
+    margin-top: 2rem !important;
+  }
+  
+  /* Force page breaks for better organization */
+  .print-break {
+    page-break-before: always !important;
+    margin-top: 0 !important;
+  }
+  
+  /* Prevent orphaned content */
+  .print-no-break {
+    page-break-inside: avoid !important;
+  }
+}
+
+/* Custom CSS for specific components */
+@layer components {
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary-500 to-primary-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1;
+  }
+  
+  .btn-secondary {
+    @apply bg-gradient-to-r from-secondary-500 to-secondary-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1;
+  }
+  
+  .btn-success {
+    @apply bg-gradient-to-r from-success-500 to-success-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1;
+  }
+  
+  .btn-warning {
+    @apply bg-gradient-to-r from-warning-500 to-warning-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1;
+  }
+  
+  .btn-danger {
+    @apply bg-gradient-to-r from-danger-500 to-danger-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-lg border border-secondary-200 hover:shadow-xl transition-all duration-300;
+  }
+  
+  .card-header {
+    @apply bg-gradient-to-r from-secondary-800 to-secondary-700 text-white px-6 py-4 rounded-t-xl;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
+  }
+  
+
+}
+
+/* Custom animations */
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+  
+  .animate-slide-down {
+    animation: slideDown 0.5s ease-out;
+  }
+  
+  .animate-slide-left {
+    animation: slideLeft 0.5s ease-out;
+  }
+  
+  .animate-slide-right {
+    animation: slideRight 0.5s ease-out;
+  }
+  
+  .animate-bounce-in {
+    animation: bounceIn 0.6s ease-out;
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+/* Base styles */
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
