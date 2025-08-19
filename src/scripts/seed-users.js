@@ -18,6 +18,7 @@ const seedUsers = async () => {
         level: 3, // Principal level
         schoolName: 'Sample School NYC',
         isActive: true,
+        title: 'Principal',
       },
       {
         name: 'Randy Cole',
@@ -25,6 +26,7 @@ const seedUsers = async () => {
         level: 3, // Principal level
         schoolName: 'School 1',
         isActive: true,
+        title: 'Principal',
       },
       {
         name: 'Javier Jaramillo',

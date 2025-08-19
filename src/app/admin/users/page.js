@@ -21,12 +21,14 @@ import {
   Info,
   User,
   Download,
-  RefreshCw
+  RefreshCw,
+  Share2
 } from 'lucide-react';
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
+import CollaborationDashboard from '../../../components/CollaborationDashboard';
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -61,6 +63,9 @@ export default function AdminUsersPage() {
     canViewAuditLogs: false,
     canBulkActions: false
   });
+
+  // Collaboration Dashboard State
+  const [activeTab, setActiveTab] = useState('users');
 
   // AG Grid configuration
   const [gridApi, setGridApi] = useState(null);
@@ -528,6 +533,15 @@ export default function AdminUsersPage() {
                 Audit Log
               </button>
               
+              <button
+                onClick={() => setActiveTab('collaboration')}
+                className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                title="Collaboration Dashboard"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Collaboration
+              </button>
+              
               <Link href="/dashboard">
                 <button className="inline-flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors duration-200">
                   <ArrowLeft className="w-4 h-4 mr-2" />
@@ -538,8 +552,44 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
-        {/* User Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {/* Tab Navigation */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+          <nav className="flex space-x-8">
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'users'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Users className="w-4 h-4 inline mr-2" />
+              User Management
+            </button>
+            <button
+              onClick={() => setActiveTab('collaboration')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'collaboration'
+                  ? 'border-green-500 text-green-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Share2 className="w-4 h-4 inline mr-2" />
+              Collaboration Dashboard
+            </button>
+          </nav>
+        </div>
+
+        {/* Collaboration Dashboard */}
+        {activeTab === 'collaboration' && (
+          <CollaborationDashboard user={session.user} />
+        )}
+
+        {/* User Management Content */}
+        {activeTab === 'users' && (
+          <>
+            {/* User Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
@@ -711,6 +761,8 @@ export default function AdminUsersPage() {
             </div>
           </div>
         </div>
+          </>
+        )}
 
         {/* Modal for Create/Edit User */}
         {showModal && (

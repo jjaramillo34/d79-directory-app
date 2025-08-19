@@ -20,7 +20,8 @@ const UserSchema = new mongoose.Schema({
   },
   schoolName: {
     type: String,
-    default: '',
+    required: true, // Make school name required for collaboration
+    index: true, // Add index for faster school-based queries
   },
   title: {
     type: String,
@@ -31,9 +32,69 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  // Collaboration permissions
+  canCollaborate: {
+    type: Boolean,
+    default: true,
+    description: 'Whether user can collaborate on forms'
+  },
+  collaborationLevel: {
+    type: String,
+    enum: ['view', 'edit', 'admin'],
+    default: 'edit',
+    description: 'User\'s collaboration permission level'
+  },
+  // Assigned forms for collaboration
+  assignedForms: [{
+    formId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'FormSubmission'
+    },
+    assignedAt: {
+      type: Date,
+      default: Date.now
+    },
+    assignedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    permissions: {
+      type: String,
+      enum: ['view', 'edit', 'admin'],
+      default: 'edit'
+    },
+    assignedSections: [{
+      type: String, // Step keys like 'tableOfContents', 'principalLetter', etc.
+      description: 'Specific form sections this user can edit'
+    }]
+  }],
+  // Activity tracking
   lastLogin: {
     type: Date,
   },
+  lastActivity: {
+    type: Date,
+    default: Date.now,
+  },
+  activityLog: [{
+    action: {
+      type: String,
+      required: true,
+      description: 'Action performed (e.g., "form_edited", "user_created", "login")'
+    },
+    target: {
+      type: String,
+      description: 'Target of the action (e.g., form ID, user email)'
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now
+    },
+    details: {
+      type: String,
+      description: 'Additional details about the action'
+    }
+  }],
   createdAt: {
     type: Date,
     default: Date.now,
@@ -49,7 +110,75 @@ UserSchema.pre('save', function (next) {
   next();
 });
 
-// Create compound index for better query performance
+// Create compound indexes for better query performance
 UserSchema.index({ email: 1, isActive: 1 });
+UserSchema.index({ schoolName: 1, isActive: 1 });
+UserSchema.index({ schoolName: 1, canCollaborate: 1 });
+UserSchema.index({ 'assignedForms.formId': 1 });
+
+// Virtual for getting user's collaboration status
+UserSchema.virtual('isCollaborator').get(function() {
+  return this.canCollaborate && this.isActive;
+});
+
+// Method to add activity log entry
+UserSchema.methods.logActivity = function(action, target, details) {
+  this.activityLog.push({
+    action,
+    target,
+    details,
+    timestamp: new Date()
+  });
+  this.lastActivity = new Date();
+  return this.save();
+};
+
+// Method to assign form for collaboration
+UserSchema.methods.assignForm = function(formId, assignedBy, permissions, sections) {
+  const existingAssignment = this.assignedForms.find(
+    assignment => assignment.formId.toString() === formId.toString()
+  );
+  
+  if (existingAssignment) {
+    // Update existing assignment
+    existingAssignment.permissions = permissions;
+    existingAssignment.assignedSections = sections;
+    existingAssignment.assignedAt = new Date();
+  } else {
+    // Create new assignment
+    this.assignedForms.push({
+      formId,
+      assignedBy,
+      permissions,
+      assignedSections: sections,
+      assignedAt: new Date()
+    });
+  }
+  
+  return this.save();
+};
+
+// Method to remove form assignment
+UserSchema.methods.removeFormAssignment = function(formId) {
+  this.assignedForms = this.assignedForms.filter(
+    assignment => assignment.formId.toString() !== formId.toString()
+  );
+  return this.save();
+};
+
+// Static method to find users by school
+UserSchema.statics.findBySchool = function(schoolName, options = {}) {
+  const query = { schoolName, isActive: true };
+  
+  if (options.includeInactive) {
+    delete query.isActive;
+  }
+  
+  if (options.collaboratorsOnly) {
+    query.canCollaborate = true;
+  }
+  
+  return this.find(query).sort({ name: 1 });
+};
 
 module.exports = mongoose.models.User || mongoose.model('User', UserSchema);
