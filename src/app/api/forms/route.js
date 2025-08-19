@@ -29,9 +29,38 @@ async function GET(request) {
         .populate('userId', 'name email level')
         .sort({ updatedAt: -1 });
     } else {
-      // Regular users can only see their own forms
-      forms = await FormSubmission.find({ userId: user._id })
-        .sort({ updatedAt: -1 });
+      // Regular users can see their own forms AND forms shared with them
+      const ownForms = await FormSubmission.find({ userId: user._id });
+      
+      // Get forms shared with this user
+      const sharedForms = await FormSubmission.find({
+        _id: { $in: user.assignedForms.map(assignment => assignment.formId) }
+      });
+      
+      // Combine and deduplicate forms
+      const allForms = [...ownForms, ...sharedForms];
+      const uniqueForms = allForms.filter((form, index, self) => 
+        index === self.findIndex(f => f._id.toString() === form._id.toString())
+      );
+      
+      forms = uniqueForms.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      
+      // Populate user data for all forms
+      forms = await FormSubmission.populate(forms, { path: 'userId', select: 'name email level' });
+      
+      // Add collaboration info to each form
+      forms = forms.map(form => {
+        const formObj = form.toObject();
+        const assignment = user.assignedForms.find(a => a.formId.toString() === form._id.toString());
+        
+        return {
+          ...formObj,
+          isShared: !!assignment,
+          collaborationPermissions: assignment ? assignment.permissions : null,
+          assignedSections: assignment ? assignment.assignedSections : [],
+          assignedAt: assignment ? assignment.assignedAt : null
+        };
+      });
     }
 
     return NextResponse.json({ forms });

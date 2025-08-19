@@ -323,17 +323,17 @@ const CollaborationDashboard = ({ user }) => {
           </div>
 
           {/* Forms List */}
-          <div className="bg-white rounded-lg shadow-md">
+          <div className="bg-white rounded-lg shadow-md mb-6">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">Your Forms</h3>
             </div>
             <div className="divide-y divide-gray-200">
-              {userForms.map((form) => (
+              {userForms.filter(form => !form.isShared).map((form) => (
                 <div key={form._id || form.id} className="px-6 py-4 flex items-center justify-between">
-                  <div>
+                  <div className="flex-1">
                     <h4 className="text-sm font-medium text-gray-900">{form.schoolName}</h4>
                     <p className="text-sm text-gray-500">Status: {form.status}</p>
-                    <p className="text-xs text-gray-400">ID: {form._id || form.id}</p>
+                    <p className="text-xs text-gray-400">Owner: {form.userId?.name || 'Unknown'}</p>
                   </div>
                   <button
                     onClick={() => {
@@ -350,6 +350,53 @@ const CollaborationDashboard = ({ user }) => {
                   </button>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Shared Forms List */}
+          <div className="bg-white rounded-lg shadow-md">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Forms Shared With You</h3>
+            </div>
+            <div className="divide-y divide-gray-200">
+              {userForms.filter(form => form.isShared).length === 0 ? (
+                <div className="px-6 py-4 text-center text-gray-500">
+                  <p>No forms have been shared with you yet.</p>
+                </div>
+              ) : (
+                userForms.filter(form => form.isShared).map((form) => (
+                  <div key={form._id || form.id} className="px-6 py-4 flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-sm font-medium text-gray-900">{form.schoolName}</h4>
+                        <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                          Shared
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500">Status: {form.status}</p>
+                      <p className="text-xs text-gray-400">
+                        Shared by: {form.userId?.name || 'Unknown'} | 
+                        Permissions: {form.collaborationPermissions || 'view'} |
+                        Assigned: {form.assignedAt ? new Date(form.assignedAt).toLocaleDateString() : 'Unknown'}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="text-sm text-gray-500">
+                        {form.collaborationPermissions} access
+                      </span>
+                      <button
+                        onClick={() => {
+                          // TODO: Navigate to the shared form for editing/viewing
+                          alert(`You have ${form.collaborationPermissions} access to this form. Navigation coming soon!`);
+                        }}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        Open
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
