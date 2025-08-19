@@ -56,6 +56,7 @@ export default function FormPage() {
     schoolName: '',
     status: 'draft'
   });
+  const [collaborationInfo, setCollaborationInfo] = useState(null);
   const [stepData, setStepData] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -400,6 +401,11 @@ export default function FormPage() {
           status: data.form.status || 'draft'
         });
         setCurrentStep(data.form.currentStep || 1);
+        
+        // Set collaboration info if available
+        if (data.collaborationInfo) {
+          setCollaborationInfo(data.collaborationInfo);
+        }
         
         // Ensure stepData is properly initialized with all steps
         const loadedStepData = data.form.formData || {};
@@ -836,6 +842,21 @@ export default function FormPage() {
                   <ClipboardList className="w-4 h-4" />
                   <span>Form ID: {formId} | Step {currentStep} of 15</span>
                 </div>
+                
+                {/* Collaboration Banner */}
+                {collaborationInfo && (
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border shadow-sm bg-blue-100 text-blue-800 border-blue-200">
+                    <span>🔗 Shared Form</span>
+                    <span className="font-semibold">•</span>
+                    <span>{collaborationInfo.permissions} access</span>
+                    {collaborationInfo.assignedAt && (
+                      <>
+                        <span className="font-semibold">•</span>
+                        <span>Assigned {new Date(collaborationInfo.assignedAt).toLocaleDateString()}</span>
+                      </>
+                    )}
+                  </div>
+                )}
                 
                 {/* Quick Completion Status */}
                 <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border shadow-sm ${

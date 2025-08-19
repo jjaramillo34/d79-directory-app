@@ -30,12 +30,30 @@ async function GET(request, { params }) {
       return NextResponse.json({ error: 'Form not found' }, { status: 404 });
     }
 
-    // Check permissions: owner can access their form, admins can access any form
-    if (form.userId._id.toString() !== user._id.toString() && user.level !== 4) {
+    // Check permissions: owner can access their form, admins can access any form, or user has been assigned the form
+    const isOwner = form.userId._id.toString() === user._id.toString();
+    const isAdmin = user.level === 4;
+    const isAssigned = user.assignedForms.some(assignment => 
+      assignment.formId.toString() === form._id.toString()
+    );
+    
+    if (!isOwner && !isAdmin && !isAssigned) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    return NextResponse.json({ form });
+    // Add collaboration information if user is assigned to this form
+    let collaborationInfo = null;
+    if (isAssigned) {
+      const assignment = user.assignedForms.find(a => a.formId.toString() === form._id.toString());
+      collaborationInfo = {
+        permissions: assignment.permissions,
+        assignedSections: assignment.assignedSections,
+        assignedAt: assignment.assignedAt,
+        assignedBy: assignment.assignedBy
+      };
+    }
+
+    return NextResponse.json({ form, collaborationInfo });
   } catch (error) {
     console.error('Error fetching form:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -64,8 +82,13 @@ async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Form not found' }, { status: 404 });
     }
 
-    // Check permissions: owner can edit their draft/submitted forms, admins can edit any form
-    if (form.userId.toString() !== user._id.toString() && user.level !== 4) {
+    // Check permissions: owner can edit their draft/submitted forms, admins can edit any form, or user has edit permissions
+    const isOwner = form.userId.toString() === user._id.toString();
+    const isAdmin = user.level === 4;
+    const assignment = user.assignedForms.find(a => a.formId.toString() === form._id.toString());
+    const hasEditAccess = assignment && assignment.permissions === 'edit';
+    
+    if (!isOwner && !isAdmin && !hasEditAccess) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 

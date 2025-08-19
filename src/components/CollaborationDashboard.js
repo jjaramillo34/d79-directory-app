@@ -386,8 +386,8 @@ const CollaborationDashboard = ({ user }) => {
                       </span>
                       <button
                         onClick={() => {
-                          // TODO: Navigate to the shared form for editing/viewing
-                          alert(`You have ${form.collaborationPermissions} access to this form. Navigation coming soon!`);
+                          // Navigate to the shared form
+                          window.location.href = `/form/${form._id || form.id}`;
                         }}
                         className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                       >
