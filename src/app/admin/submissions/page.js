@@ -50,6 +50,12 @@ export default function AdminSubmissionsPage() {
   const [exporting, setExporting] = useState(false);
   const [showFormViewer, setShowFormViewer] = useState(false);
   const [selectedForm, setSelectedForm] = useState(null);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [submissionToTransfer, setSubmissionToTransfer] = useState(null);
+  const [transferData, setTransferData] = useState({
+    newOwnerEmail: ''
+  });
+  const [transferring, setTransferring] = useState(false);
 
   // Handle authentication
   useEffect(() => {
@@ -60,7 +66,7 @@ export default function AdminSubmissionsPage() {
       return;
     }
 
-    // Check if user has admin permission (Level 4)
+    // Check if user has admin permission (Level 4+)
     if (session.user.level < 4) {
       router.push('/dashboard');
       return;
@@ -69,7 +75,7 @@ export default function AdminSubmissionsPage() {
 
   // Fetch submissions
   useEffect(() => {
-    if (session?.user?.level === 4) {
+    if (session?.user?.level >= 4) {
       fetchSubmissions();
     }
   }, [session]);
@@ -160,6 +166,47 @@ export default function AdminSubmissionsPage() {
     } catch (error) {
       console.error('Error deleting submission:', error);
     }
+  };
+
+  const handleTransferOwnership = async () => {
+    if (!submissionToTransfer || !transferData.newOwnerEmail) return;
+
+    setTransferring(true);
+    try {
+      const response = await fetch('/api/forms/transfer-ownership', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          formId: submissionToTransfer._id,
+          newOwnerEmail: transferData.newOwnerEmail
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        await fetchSubmissions();
+        setShowTransferModal(false);
+        setSubmissionToTransfer(null);
+        setTransferData({ newOwnerEmail: '' });
+        alert(`Ownership transferred successfully! ${result.message}`);
+      } else {
+        const errorData = await response.json();
+        alert(`Error transferring ownership: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Error transferring ownership:', error);
+      alert('Error transferring ownership. Please try again.');
+    } finally {
+      setTransferring(false);
+    }
+  };
+
+  const openTransferModal = (submission) => {
+    setSubmissionToTransfer(submission);
+    setTransferData({ newOwnerEmail: '' });
+    setShowTransferModal(true);
   };
 
   const exportToJSON = () => {
@@ -351,8 +398,8 @@ export default function AdminSubmissionsPage() {
     );
   }
 
-  // Check if user is admin (Level 4)
-  if (session.user.level !== 4) {
+  // Check if user is admin (Level 4+)
+  if (session.user.level < 4) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white p-8 rounded-lg shadow-lg text-center">
@@ -363,7 +410,7 @@ export default function AdminSubmissionsPage() {
             Access Denied
           </h1>
           <p className="text-gray-600 mb-6">
-            You need Level 4 (Admin) access to view this page.
+            You need Level 4 (Admin) access or higher to view this page.
           </p>
           <Link
             href="/dashboard"
@@ -630,6 +677,15 @@ export default function AdminSubmissionsPage() {
                                 View Form
                               </button>
                             )}
+                            {session?.user?.level === 5 && (
+                              <button
+                                onClick={() => openTransferModal(submission)}
+                                className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors"
+                                title="Transfer Ownership"
+                              >
+                                Transfer
+                              </button>
+                            )}
                             <button
                               onClick={() => {
                                 setSubmissionToDelete(submission);
@@ -827,6 +883,75 @@ export default function AdminSubmissionsPage() {
                 className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
               >
                 Delete Permanently
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Ownership Modal */}
+      {showTransferModal && submissionToTransfer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-8 max-w-lg w-full max-h-90vh overflow-auto">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                  <Users className="w-6 h-6 text-purple-600" />
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900">
+                Transfer Form Ownership
+              </h3>
+            </div>
+            <div className="mb-6">
+              <p className="text-sm text-gray-600 mb-4">
+                Transfer ownership of this form to another principal. The new owner will have full control over the form.
+              </p>
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-purple-800 mb-2">
+                  <strong>Current Owner:</strong> {submissionToTransfer.principalName} ({submissionToTransfer.principalEmail})
+                </p>
+                <p className="text-sm text-purple-800 mb-2">
+                  <strong>School:</strong> {submissionToTransfer.schoolName}
+                </p>
+                <p className="text-sm text-purple-800">
+                  <strong>Form Status:</strong> {getStatusBadge(submissionToTransfer.status || 'draft')}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  New Owner Email *
+                </label>
+                <input
+                  type="email"
+                  value={transferData.newOwnerEmail}
+                  onChange={(e) => setTransferData({ newOwnerEmail: e.target.value })}
+                  placeholder="Enter principal email (must be Level 4)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  The new owner must be a Level 4 (Admin Principal) user
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowTransferModal(false);
+                  setSubmissionToTransfer(null);
+                  setTransferData({ newOwnerEmail: '' });
+                }}
+                className="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleTransferOwnership}
+                disabled={!transferData.newOwnerEmail || transferring}
+                className="px-6 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors duration-200"
+              >
+                {transferring ? 'Transferring...' : 'Transfer Ownership'}
               </button>
             </div>
           </div>

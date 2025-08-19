@@ -84,8 +84,8 @@ export default function FormPage() {
       return;
     }
 
-    // Check if user has permission (Level 3 or 4)
-    if (session.user.level < 3) {
+    // Check if user has permission (Level 1+ can view forms they're assigned to)
+    if (session.user.level < 1) {
       router.push('/dashboard');
       return;
     }

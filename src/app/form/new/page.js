@@ -19,6 +19,7 @@ export default function NewFormPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [schoolName, setSchoolName] = useState('');
+  const [initialOwnerEmail, setInitialOwnerEmail] = useState('');
 
   // Set default school name from session
   useEffect(() => {
@@ -64,28 +65,8 @@ export default function NewFormPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          principalEmail: session.user.email,
           schoolName: schoolName.trim(),
-          formData: {
-            // Initialize with empty data for all 15 steps
-            step1: {},
-            step2: {},
-            step3: {},
-            step4: {},
-            step5: {},
-            step6: {},
-            step7: {},
-            step8: {},
-            step9: {},
-            step10: {},
-            step11: {},
-            step12: {},
-            step13: {},
-            step14: {},
-            step15: {},
-          },
-          currentStep: 1,
-          status: 'draft'
+          initialOwnerEmail: initialOwnerEmail.trim() || undefined,
         }),
       });
 
@@ -231,6 +212,26 @@ export default function NewFormPage() {
                 Please enter the official name of your school as it appears in DOE records.
               </p>
             </div>
+
+            {/* Initial Ownership Assignment - Only for Super Admins */}
+            {session?.user?.level === 5 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <User className="w-4 h-4 inline mr-2 text-gray-500" />
+                  Assign to Principal (Optional)
+                </label>
+                <input
+                  type="email"
+                  value={initialOwnerEmail}
+                  onChange={(e) => setInitialOwnerEmail(e.target.value)}
+                  placeholder="Enter principal email to assign ownership (must be Level 4)"
+                  className="block w-full px-3 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Leave blank to create the form for yourself, or enter a Level 4 principal's email to assign ownership immediately.
+                </p>
+              </div>
+            )}
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h3 className="text-sm font-medium text-blue-800 mb-3 flex items-center">

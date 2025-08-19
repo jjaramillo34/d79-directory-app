@@ -15,8 +15,9 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 1,
-    max: 4,
-    default: 3,
+    max: 5,
+    default: 1,
+    description: 'User access level: 1=Viewer, 2=Other Titles, 3=Assistant Principal, 4=Admin Principal, 5=Super Admin'
   },
   schoolName: {
     type: String,

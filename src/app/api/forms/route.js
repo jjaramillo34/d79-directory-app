@@ -23,11 +23,29 @@ async function GET(request) {
 
     let forms;
     
-    if (user.level === 4) {
-      // Admin can see all forms
+    if (user.level === 5) {
+      // Super Admin can see all forms
       forms = await FormSubmission.find({})
         .populate('userId', 'name email level')
         .sort({ updatedAt: -1 });
+    } else if (user.level === 4) {
+      // Admin Principal can see forms from their school and forms they've assigned
+      const schoolForms = await FormSubmission.find({ schoolName: user.schoolName })
+        .populate('userId', 'name email level')
+        .sort({ updatedAt: -1 });
+      
+      // Also include forms they've assigned to others
+      const assignedForms = await FormSubmission.find({
+        _id: { $in: user.assignedForms.map(assignment => assignment.formId) }
+      }).populate('userId', 'name email level');
+      
+      // Combine and deduplicate
+      const allForms = [...schoolForms, ...assignedForms];
+      const uniqueForms = allForms.filter((form, index, self) => 
+        index === self.findIndex(f => f._id.toString() === form._id.toString())
+      );
+      
+      forms = uniqueForms.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
     } else {
       // Regular users can see their own forms AND forms shared with them
       const ownForms = await FormSubmission.find({ userId: user._id });
@@ -86,26 +104,61 @@ async function POST(request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Check if user has permission to create forms (Level 3+)
-    if (user.level < 3) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    // Check if user has permission to create forms (Level 4+)
+    if (user.level < 4) {
+      return NextResponse.json({ error: 'Insufficient permissions. Only Admin Principals (Level 4) and Super Admins (Level 5) can create forms.' }, { status: 403 });
     }
 
-    const { schoolName } = await request.json();
+    const { schoolName, initialOwnerEmail } = await request.json();
 
     if (!schoolName || !schoolName.trim()) {
       return NextResponse.json({ error: 'School name is required' }, { status: 400 });
     }
 
+    let formOwner = user;
+    let principalEmail = user.email;
+    let principalName = user.name;
+
+    // If super admin is creating a form for someone else
+    if (user.level === 5 && initialOwnerEmail && initialOwnerEmail !== user.email) {
+      const initialOwner = await User.findOne({ email: initialOwnerEmail });
+      if (!initialOwner) {
+        return NextResponse.json({ error: 'Initial owner not found' }, { status: 404 });
+      }
+      
+      // Verify the initial owner is a Level 4 (Admin Principal)
+      if (initialOwner.level !== 4) {
+        return NextResponse.json({ 
+          error: 'Initial owner must be a Level 4 (Admin Principal) user' 
+        }, { status: 400 });
+      }
+
+      formOwner = initialOwner;
+      principalEmail = initialOwner.email;
+      principalName = initialOwner.name;
+    }
+
     // Create new form submission
     const newForm = new FormSubmission({
-      userId: user._id,
+      userId: formOwner._id,
       schoolName: schoolName.trim(),
-      principalEmail: user.email,
-      principalName: user.name,
+      principalEmail: principalEmail,
+      principalName: principalName,
       status: 'draft',
       currentStep: 1,
+      createdBy: user._id, // Track who actually created it
     });
+
+    // If this is a super admin creating for someone else, add transfer history
+    if (user.level === 5 && initialOwnerEmail && initialOwnerEmail !== user.email) {
+      newForm.transferHistory = [{
+        from: user._id,
+        to: formOwner._id,
+        transferredBy: user._id,
+        transferredAt: new Date(),
+        reason: 'Initial creation by Super Admin'
+      }];
+    }
 
     await newForm.save();
 

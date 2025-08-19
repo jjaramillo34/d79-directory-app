@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { 
@@ -33,8 +33,9 @@ import CollaborationDashboard from '../../../components/CollaborationDashboard';
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-export default function AdminUsersPage() {
+function AdminUsersPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -43,7 +44,7 @@ export default function AdminUsersPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    level: 3,
+    level: 1,
     schoolName: '',
     title: '',
     isActive: true
@@ -66,6 +67,14 @@ export default function AdminUsersPage() {
 
   // Collaboration Dashboard State
   const [activeTab, setActiveTab] = useState('users');
+
+  // Check for tab parameter in URL
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'collaboration') {
+      setActiveTab('collaboration');
+    }
+  }, [searchParams]);
 
   // AG Grid configuration
   const [gridApi, setGridApi] = useState(null);
@@ -132,7 +141,7 @@ export default function AdminUsersPage() {
     setFormData({
       name: '',
       email: '',
-      level: 3,
+      level: 1,
       schoolName: '',
       title: '',
       isActive: true
@@ -439,10 +448,11 @@ export default function AdminUsersPage() {
 
   const getLevelBadge = (level) => {
     const levelConfig = {
-      1: { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Basic User' },
-      2: { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'Staff' },
-      3: { color: 'bg-indigo-100 text-indigo-800 border-indigo-200', label: 'Principal' },
-      4: { color: 'bg-amber-100 text-amber-800 border-amber-200', label: 'Admin' }
+      1: { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Viewer' },
+      2: { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'Other Titles' },
+      3: { color: 'bg-indigo-100 text-indigo-800 border-indigo-200', label: 'Assistant Principal' },
+      4: { color: 'bg-amber-100 text-amber-800 border-amber-200', label: 'Admin Principal' },
+      5: { color: 'bg-red-100 text-red-800 border-red-200', label: 'Super Admin' }
     };
     
     const config = levelConfig[level] || levelConfig[1];
@@ -588,8 +598,8 @@ export default function AdminUsersPage() {
         {/* User Management Content */}
         {activeTab === 'users' && (
           <>
-            {/* User Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                         {/* User Statistics */}
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
@@ -638,17 +648,29 @@ export default function AdminUsersPage() {
              </div>
            </div>
           
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mr-3">
-                <Shield className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Admins</p>
-                <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.level === 4).length}</p>
-              </div>
-            </div>
-          </div>
+                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+             <div className="flex items-center">
+               <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mr-3">
+                 <Shield className="w-5 h-5 text-amber-600" />
+               </div>
+               <div>
+                 <p className="text-sm font-medium text-gray-600">Admin Principals</p>
+                 <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.level === 4).length}</p>
+               </div>
+             </div>
+           </div>
+           
+           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+             <div className="flex items-center">
+               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                 <Shield className="w-5 h-5 text-red-600" />
+               </div>
+               <div>
+                 <p className="text-sm font-medium text-gray-600">Super Admins</p>
+                 <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.level === 5).length}</p>
+               </div>
+             </div>
+           </div>
         </div>
 
         {/* Users Table */}
@@ -807,16 +829,17 @@ export default function AdminUsersPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Level
                   </label>
-                  <select
-                    value={formData.level}
-                    onChange={(e) => setFormData({...formData, level: parseInt(e.target.value)})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value={1}>Level 1 - Basic User</option>
-                    <option value={2}>Level 2 - Staff</option>
-                    <option value={3}>Level 3 - Principal</option>
-                    <option value={4}>Level 4 - Admin</option>
-                  </select>
+                                     <select
+                     value={formData.level}
+                     onChange={(e) => setFormData({...formData, level: parseInt(e.target.value)})}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   >
+                     <option value={1}>Level 1 - Viewer (Can only view forms they're assigned to)</option>
+                     <option value={2}>Level 2 - Other Titles (Can view forms they're assigned to)</option>
+                     <option value={3}>Level 3 - Assistant Principal (Can view and edit forms they're assigned to)</option>
+                     <option value={4}>Level 4 - Admin Principal (Can create forms, manage school users, assign forms)</option>
+                     <option value={5}>Level 5 - Super Admin (Full access to everything, manage all users and forms)</option>
+                   </select>
                 </div>
 
                                  <div>
@@ -948,16 +971,17 @@ export default function AdminUsersPage() {
                       <div className="space-y-3">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">User Level</label>
-                          <select
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                            value={user.level}
-                            onChange={(e) => handlePermissionUpdate(user._id, { level: parseInt(e.target.value) })}
-                          >
-                            <option value={1}>Level 1 - Basic User</option>
-                            <option value={2}>Level 2 - Staff</option>
-                            <option value={3}>Level 3 - Principal</option>
-                            <option value={4}>Level 4 - Admin</option>
-                          </select>
+                                                     <select
+                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                             value={user.level}
+                             onChange={(e) => handlePermissionUpdate(user._id, { level: parseInt(e.target.value) })}
+                           >
+                             <option value={1}>Level 1 - Viewer (Can only view forms they're assigned to)</option>
+                             <option value={2}>Level 2 - Other Titles (Can view forms they're assigned to)</option>
+                             <option value={3}>Level 3 - Assistant Principal (Can view and edit forms they're assigned to)</option>
+                             <option value={4}>Level 4 - Admin Principal (Can create forms, manage school users, assign forms)</option>
+                             <option value={5}>Level 5 - Super Admin (Full access to everything, manage all users and forms)</option>
+                           </select>
                         </div>
                         
                                                  <div>
@@ -1155,5 +1179,21 @@ export default function AdminUsersPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// Wrap the component that uses useSearchParams in Suspense
+export default function AdminUsersPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-transparent border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <AdminUsersPageContent />
+    </Suspense>
   );
 }

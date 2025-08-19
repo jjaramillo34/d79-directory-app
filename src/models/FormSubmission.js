@@ -199,6 +199,36 @@ const FormSubmissionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  // Transfer history for ownership changes
+  transferHistory: [{
+    from: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    to: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    transferredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    transferredAt: {
+      type: Date,
+      default: Date.now,
+    },
+    reason: {
+      type: String,
+      default: 'Ownership transfer',
+    },
+  }],
+  // Track who originally created the form (for super admin transfers)
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
 });
 
 FormSubmissionSchema.pre('save', function (next) {

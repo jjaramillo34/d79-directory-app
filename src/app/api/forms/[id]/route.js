@@ -30,14 +30,14 @@ async function GET(request, { params }) {
       return NextResponse.json({ error: 'Form not found' }, { status: 404 });
     }
 
-    // Check permissions: owner can access their form, admins can access any form, or user has been assigned the form
+    // Check permissions: owner can access their form, super admins can access any form, or user has been assigned the form
     const isOwner = form.userId._id.toString() === user._id.toString();
-    const isAdmin = user.level === 4;
+    const isSuperAdmin = user.level === 5;
     const isAssigned = user.assignedForms.some(assignment => 
       assignment.formId.toString() === form._id.toString()
     );
     
-    if (!isOwner && !isAdmin && !isAssigned) {
+    if (!isOwner && !isSuperAdmin && !isAssigned) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -82,13 +82,13 @@ async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Form not found' }, { status: 404 });
     }
 
-    // Check permissions: owner can edit their draft/submitted forms, admins can edit any form, or user has edit permissions
+    // Check permissions: owner can edit their draft/submitted forms, super admins can edit any form, or user has edit permissions
     const isOwner = form.userId.toString() === user._id.toString();
-    const isAdmin = user.level === 4;
+    const isSuperAdmin = user.level === 5;
     const assignment = user.assignedForms.find(a => a.formId.toString() === form._id.toString());
     const hasEditAccess = assignment && assignment.permissions === 'edit';
     
-    if (!isOwner && !isAdmin && !hasEditAccess) {
+    if (!isOwner && !isSuperAdmin && !hasEditAccess) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -221,8 +221,8 @@ async function PUT(request, { params }) {
       form.completedSteps = completedSteps;
     }
 
-    // Handle admin actions
-    if (user.level === 4 && action === 'review') {
+    // Handle admin actions (Super Admin only)
+    if (user.level === 5 && action === 'review') {
       const { status, comments } = updateData;
       if (['approved', 'rejected', 'under_review'].includes(status)) {
         form.status = status;
@@ -265,8 +265,8 @@ async function DELETE(request, { params }) {
     await connectDB();
 
     const user = await User.findOne({ email: session.user.email });
-    if (!user || user.level !== 4) {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    if (!user || user.level !== 5) {
+      return NextResponse.json({ error: 'Super Admin access required' }, { status: 403 });
     }
 
     const { id } = await params;
