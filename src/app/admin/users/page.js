@@ -54,9 +54,14 @@ function AdminUsersPageContent() {
   const [showAdvancedModal, setShowAdvancedModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showAuditModal, setShowAuditModal] = useState(false);
+  const [showCsvImportModal, setShowCsvImportModal] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [bulkAction, setBulkAction] = useState('');
   const [auditLogs, setAuditLogs] = useState([]);
+  const [csvData, setCsvData] = useState([]);
+  const [csvPreview, setCsvPreview] = useState([]);
+  const [importing, setImporting] = useState(false);
+  const [importResults, setImportResults] = useState(null);
   const [permissionData, setPermissionData] = useState({
     canEditUsers: false,
     canDeleteUsers: false,
@@ -290,6 +295,88 @@ function AdminUsersPageContent() {
     }
   };
 
+  // CSV Import Functions
+  const handleCsvFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const csv = e.target.result;
+      const lines = csv.split('\n');
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      
+      const data = lines.slice(1).filter(line => line.trim()).map(line => {
+        const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+        const row = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index] || '';
+        });
+        return row;
+      });
+
+      setCsvData(data);
+      setCsvPreview(data.slice(0, 5)); // Show first 5 rows for preview
+    };
+    reader.readAsText(file);
+  };
+
+  const downloadCsvTemplate = () => {
+    const template = [
+      'name,email,level,schoolName,title',
+      'John Doe,john.doe@schools.nyc.gov,3,Adult Education Center,Principal',
+      'Jane Smith,jane.smith@schools.nyc.gov,3,Adult Education Center,Assistant Principal',
+      'Bob Johnson,bob.johnson@schools.nyc.gov,4,Adult Education Center,Admin Principal'
+    ].join('\n');
+
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'user_import_template.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const processCsvImport = async () => {
+    if (csvData.length === 0) return;
+
+    setImporting(true);
+    setImportResults(null);
+
+    try {
+      const response = await fetch('/api/users/bulk-import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ users: csvData }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setImportResults(result);
+        await fetchUsers(); // Refresh user list
+        alert(`Import completed! ${result.successCount} users created, ${result.errorCount} errors.`);
+      } else {
+        const errorData = await response.json();
+        alert(`Import failed: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Error importing users:', error);
+      alert('Error importing users. Please try again.');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const resetCsvImport = () => {
+    setCsvData([]);
+    setCsvPreview([]);
+    setImportResults(null);
+    setShowCsvImportModal(false);
+  };
+
   const toggleUserSelection = (user) => {
     setSelectedUsers(prev => 
       prev.find(u => u._id === user._id)
@@ -491,7 +578,7 @@ function AdminUsersPageContent() {
 
      return (
      <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-8xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4">
@@ -534,14 +621,23 @@ function AdminUsersPageContent() {
                 Bulk Actions
               </button>
               
-              <button
-                onClick={() => setShowAuditModal(true)}
-                className="inline-flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
-                title="User Activity Audit"
-              >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Audit Log
-              </button>
+                             <button
+                 onClick={() => setShowAuditModal(true)}
+                 className="inline-flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                 title="User Activity Audit"
+               >
+                 <BarChart3 className="w-4 h-4 mr-2" />
+                 Audit Log
+               </button>
+               
+               <button
+                 onClick={() => setShowCsvImportModal(true)}
+                 className="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                 title="Bulk Import Users from CSV"
+               >
+                 <Download className="w-4 h-4 mr-2" />
+                 Import CSV
+               </button>
               
               <button
                 onClick={() => setActiveTab('collaboration')}
@@ -733,56 +829,113 @@ function AdminUsersPageContent() {
 
 
 
-        {/* Enhanced User Management Features Section */}
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6 mt-6">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h3 className="text-green-800 font-bold text-lg mb-3 flex items-center">
-                <CheckCircle className="w-5 h-5 mr-2" />
-                User Management Features (Now Available!)
-              </h3>
-              <p className="text-green-700 text-sm mb-4">
-                Advanced user management capabilities are now fully implemented and ready to use. Take advantage of these powerful tools to manage your user base effectively.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="flex items-center text-green-700 text-sm">
-                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
-                  ✅ Edit user levels and permissions
-                </div>
-                <div className="flex items-center text-green-700 text-sm">
-                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
-                  ✅ Activate/deactivate user accounts
-                </div>
-                <div className="flex items-center text-green-700 text-sm">
-                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
-                  ✅ Bulk user management tools
-                </div>
-                <div className="flex items-center text-green-700 text-sm">
-                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
-                  ✅ User activity audit logs
-                </div>
-              </div>
-            </div>
-            <div className="ml-4 flex-shrink-0">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-green-600" />
-              </div>
-            </div>
-          </div>
-          
-          {/* How to Use Section */}
-          <div className="mt-6 pt-4 border-t border-green-200">
-            <h4 className="text-green-800 font-semibold text-sm mb-2 flex items-center">
-              <Info className="w-4 h-4 mr-2" />
-              How to Use These Features
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-green-600">
-              <span>• Click "Advanced" for permissions & status</span>
-              <span>• Use "Bulk Actions" for multiple users</span>
-              <span>• View "Audit Log" for activity tracking</span>
-            </div>
-          </div>
-        </div>
+                 {/* Enhanced User Management Features Section */}
+         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6 mt-6">
+           <div className="flex items-start justify-between">
+             <div className="flex-1">
+               <h3 className="text-green-800 font-bold text-lg mb-3 flex items-center">
+                 <CheckCircle className="w-5 h-5 mr-2" />
+                 User Management Features (Now Available!)
+               </h3>
+               <p className="text-green-700 text-sm mb-4">
+                 Advanced user management capabilities are now fully implemented and ready to use. Take advantage of these powerful tools to manage your user base effectively.
+               </p>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                 <div className="flex items-center text-green-700 text-sm">
+                   <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                   ✅ Edit user levels and permissions
+                 </div>
+                 <div className="flex items-center text-green-700 text-sm">
+                   <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                   ✅ Activate/deactivate user accounts
+                 </div>
+                 <div className="flex items-center text-green-700 text-sm">
+                   <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                   ✅ Bulk user management tools
+                 </div>
+                 <div className="flex items-center text-green-700 text-sm">
+                   <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                   ✅ User activity audit logs
+                 </div>
+                 <div className="flex items-center text-green-700 text-sm">
+                   <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                   ✅ CSV bulk import for multiple users
+                 </div>
+               </div>
+             </div>
+             <div className="ml-4 flex-shrink-0">
+               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                 <CheckCircle className="w-8 h-8 text-green-600" />
+               </div>
+             </div>
+           </div>
+           
+           {/* How to Use Section */}
+           <div className="mt-6 pt-4 border-t border-green-200">
+             <h4 className="text-green-800 font-semibold text-sm mb-2 flex items-center">
+               <Info className="w-4 h-4 mr-2" />
+               How to Use These Features
+             </h4>
+             <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-xs text-green-600">
+               <span>• Click "Advanced" for permissions & status</span>
+               <span>• Use "Bulk Actions" for multiple users</span>
+               <span>• View "Audit Log" for activity tracking</span>
+               <span>• Use "Import CSV" for bulk user creation</span>
+             </div>
+           </div>
+         </div>
+
+         {/* CSV Import Information Section */}
+         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mt-6">
+           <div className="flex items-start justify-between">
+             <div className="flex-1">
+               <h3 className="text-blue-800 font-bold text-lg mb-3 flex items-center">
+                 <Download className="w-5 h-5 mr-2" />
+                 CSV Bulk Import - Perfect for Onboarding Multiple Principals!
+               </h3>
+               <p className="text-blue-700 text-sm mb-4">
+                 Need to add 24 principals and assistant principals quickly? Use our CSV import feature to create multiple users at once with proper validation and error handling.
+               </p>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                 <div className="flex items-center text-blue-700 text-sm">
+                   <CheckCircle className="w-4 h-4 mr-2 text-blue-600" />
+                   ✅ Download CSV template with correct format
+                 </div>
+                 <div className="flex items-center text-blue-700 text-sm">
+                   <CheckCircle className="w-4 h-4 mr-2 text-blue-600" />
+                   ✅ Preview data before importing
+                 </div>
+                 <div className="flex items-center text-blue-700 text-sm">
+                   <CheckCircle className="w-4 h-4 mr-2 text-blue-600" />
+                   ✅ Automatic validation and error reporting
+                 </div>
+                 <div className="flex items-center text-blue-700 text-sm">
+                   <CheckCircle className="w-4 h-4 mr-2 text-blue-600" />
+                   ✅ Batch processing for large imports
+                 </div>
+               </div>
+             </div>
+             <div className="ml-4 flex-shrink-0">
+               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                 <Download className="w-8 h-8 text-blue-600" />
+               </div>
+             </div>
+           </div>
+           
+           {/* CSV Format Section */}
+           <div className="mt-6 pt-4 border-t border-blue-200">
+             <h4 className="text-blue-800 font-semibold text-sm mb-2 flex items-center">
+               <Info className="w-4 h-4 mr-2" />
+               CSV Format Requirements
+             </h4>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-blue-600">
+               <span>• Required columns: name, email, level, schoolName</span>
+               <span>• Optional columns: title</span>
+               <span>• Level values: 1=Viewer, 2=Other, 3=Assistant Principal, 4=Admin Principal, 5=Super Admin</span>
+               <span>• Email must be valid format (e.g., john.doe@schools.nyc.gov)</span>
+             </div>
+           </div>
+         </div>
           </>
         )}
 
@@ -1176,11 +1329,182 @@ function AdminUsersPageContent() {
               </div>
             </div>
           </div>
-        )}
-      </div>
-    </div>
-  );
-}
+                 )}
+
+         {/* CSV Import Modal */}
+         {showCsvImportModal && (
+           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+             <div className="bg-white rounded-lg p-8 w-full max-w-4xl max-h-90vh overflow-y-auto">
+               <div className="flex items-center justify-between mb-6">
+                 <h3 className="text-2xl font-semibold text-gray-900 flex items-center">
+                   <Download className="w-6 h-6 mr-2 text-emerald-600" />
+                   Bulk Import Users from CSV
+                 </h3>
+                 <button
+                   onClick={downloadCsvTemplate}
+                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                 >
+                   Download Template
+                 </button>
+               </div>
+
+               <div className="space-y-6">
+                 {/* File Upload */}
+                 <div>
+                   <h4 className="text-lg font-semibold text-gray-800 mb-3">Step 1: Upload CSV File</h4>
+                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                     <input
+                       type="file"
+                       accept=".csv"
+                       onChange={handleCsvFileUpload}
+                       className="hidden"
+                       id="csv-upload"
+                     />
+                     <label
+                       htmlFor="csv-upload"
+                       className="cursor-pointer inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                     >
+                       <Download className="w-4 h-4 mr-2" />
+                       Choose CSV File
+                     </label>
+                     <p className="text-sm text-gray-600 mt-2">
+                       Upload a CSV file with columns: name, email, level, schoolName, title
+                     </p>
+                   </div>
+                 </div>
+
+                 {/* CSV Preview */}
+                 {csvPreview.length > 0 && (
+                   <div>
+                     <h4 className="text-lg font-semibold text-gray-800 mb-3">Step 2: Preview Data ({csvData.length} users)</h4>
+                     <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                       <table className="w-full">
+                         <thead className="bg-gray-50">
+                           <tr>
+                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">School</th>
+                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                           </tr>
+                         </thead>
+                         <tbody className="bg-white divide-y divide-gray-200">
+                           {csvPreview.map((row, index) => (
+                             <tr key={index} className="hover:bg-gray-50">
+                               <td className="px-3 py-2 text-sm text-gray-900">{row.name}</td>
+                               <td className="px-3 py-2 text-sm text-gray-700">{row.email}</td>
+                               <td className="px-3 py-2 text-sm text-gray-700">
+                                 <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
+                                   row.level == 3 ? 'bg-indigo-100 text-indigo-800' :
+                                   row.level == 4 ? 'bg-amber-100 text-amber-800' :
+                                   'bg-gray-100 text-gray-800'
+                                 }`}>
+                                   Level {row.level} ({row.level == 3 ? 'Assistant Principal' : row.level == 4 ? 'Admin Principal' : 'Other'})
+                                 </span>
+                               </td>
+                               <td className="px-3 py-2 text-sm text-gray-700">{row.schoolName}</td>
+                               <td className="px-3 py-2 text-sm text-gray-700">{row.title}</td>
+                             </tr>
+                           ))}
+                           {csvData.length > 5 && (
+                             <tr>
+                               <td colSpan="5" className="px-3 py-2 text-sm text-gray-500 text-center">
+                                 ... and {csvData.length - 5} more users
+                               </td>
+                             </tr>
+                           )}
+                         </tbody>
+                       </table>
+                     </div>
+                   </div>
+                 )}
+
+                 {/* Import Results */}
+                 {importResults && (
+                   <div>
+                     <h4 className="text-lg font-semibold text-gray-800 mb-3">Import Results</h4>
+                     <div className={`rounded-lg p-4 ${
+                       importResults.errorCount === 0 ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'
+                     }`}>
+                       <div className="flex items-center justify-between">
+                         <div>
+                           <p className={`text-sm font-medium ${
+                             importResults.errorCount === 0 ? 'text-green-800' : 'text-yellow-800'
+                           }`}>
+                             {importResults.errorCount === 0 ? '✅ Import Successful!' : '⚠️ Import Completed with Errors'}
+                           </p>
+                           <p className={`text-sm ${
+                             importResults.errorCount === 0 ? 'text-green-700' : 'text-yellow-700'
+                           }`}>
+                             {importResults.successCount} users created successfully
+                             {importResults.errorCount > 0 && `, ${importResults.errorCount} errors encountered`}
+                           </p>
+                         </div>
+                         <div className="text-right">
+                           <p className="text-2xl font-bold text-green-600">{importResults.successCount}</p>
+                           <p className="text-sm text-green-600">Users Created</p>
+                         </div>
+                       </div>
+                       
+                       {importResults.errors && importResults.errors.length > 0 && (
+                         <div className="mt-3 pt-3 border-t border-yellow-200">
+                           <p className="text-sm font-medium text-yellow-800 mb-2">Errors:</p>
+                           <div className="space-y-1">
+                             {importResults.errors.slice(0, 5).map((error, index) => (
+                               <p key={index} className="text-xs text-yellow-700">
+                                 Row {error.row}: {error.message}
+                               </p>
+                             ))}
+                             {importResults.errors.length > 5 && (
+                               <p className="text-xs text-yellow-700">
+                                 ... and {importResults.errors.length - 5} more errors
+                               </p>
+                             )}
+                           </div>
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                 )}
+
+                 {/* Action Buttons */}
+                 <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+                   <button
+                     type="button"
+                     onClick={resetCsvImport}
+                     className="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                   >
+                     Cancel
+                   </button>
+                   {csvData.length > 0 && (
+                     <button
+                       type="button"
+                       onClick={processCsvImport}
+                       disabled={importing}
+                       className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                     >
+                       {importing ? (
+                         <>
+                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                           Importing...
+                         </>
+                       ) : (
+                         <>
+                           <Download className="w-4 h-4 mr-2" />
+                           Import {csvData.length} Users
+                         </>
+                       )}
+                     </button>
+                   )}
+                 </div>
+               </div>
+             </div>
+           </div>
+         )}
+       </div>
+     </div>
+   );
+ }
 
 // Wrap the component that uses useSearchParams in Suspense
 export default function AdminUsersPage() {
