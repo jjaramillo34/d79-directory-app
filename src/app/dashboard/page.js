@@ -115,13 +115,10 @@ export default function DashboardPage() {
     
     setLoadingTimeline(true);
     try {
-      console.log('Fetching timeline data...');
       const response = await fetch('/api/admin/timeline');
-      console.log('Timeline response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Timeline data received:', data);
         setTimelineData(data.data);
       } else {
         const errorData = await response.json().catch(() => ({}));

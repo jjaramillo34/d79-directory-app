@@ -86,7 +86,6 @@ export default function AdminSubmissionsPage() {
       const response = await fetch('/api/forms');
       if (response.ok) {
         const data = await response.json();
-        console.log('Fetched submissions data:', data.forms);
         setSubmissions(data.forms || []);
       }
     } catch (error) {
@@ -615,7 +614,7 @@ export default function AdminSubmissionsPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {filteredSubmissions.map((submission) => {
-                      console.log('Rendering submission:', submission);
+
                       return (
                         <tr 
                           key={submission._id} 

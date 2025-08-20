@@ -75,7 +75,7 @@ export default function NewFormPage() {
       }
 
       const data = await response.json();
-      console.log('Form created:', data);
+
       
       // Redirect to the new form
       router.push(`/form/${data.formId}`);

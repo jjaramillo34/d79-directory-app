@@ -70,7 +70,7 @@ const CollaborationDashboard = ({ user }) => {
       const response = await fetch('/api/forms');
       if (response.ok) {
         const data = await response.json();
-        console.log('Fetched forms data:', data);
+
         setUserForms(data.forms || []);
       }
     } catch (error) {
@@ -107,8 +107,7 @@ const CollaborationDashboard = ({ user }) => {
   const handleShareForm = async (e) => {
     e.preventDefault();
     
-    console.log('Share form data:', shareForm);
-    console.log('Selected form:', selectedForm);
+
     
     if (!shareForm.formId || shareForm.userIds.length === 0) {
       alert(`Please select a form and at least one user. Form ID: ${shareForm.formId}, Users: ${shareForm.userIds.length}`);
@@ -337,11 +336,9 @@ const CollaborationDashboard = ({ user }) => {
                   </div>
                   <button
                     onClick={() => {
-                      console.log('Form selected:', form);
                       setSelectedForm(form);
                       const formId = form._id || form.id;
                       setShareForm({ formId: formId.toString(), userIds: [], permissions: 'edit', sections: [] });
-                      console.log('Share form updated:', { formId: formId.toString(), userIds: [], permissions: 'edit', sections: [] });
                       setShowShareForm(true);
                     }}
                     className="text-blue-600 hover:text-blue-800 text-sm font-medium"
@@ -513,13 +510,13 @@ const CollaborationDashboard = ({ user }) => {
                           if (e.target.checked) {
                             setShareForm(prev => {
                               const newUserIds = [...prev.userIds, user._id || user.id];
-                              console.log('User added:', user._id || user.id, 'New userIds:', newUserIds);
+
                               return { ...prev, userIds: newUserIds };
                             });
                           } else {
                             setShareForm(prev => {
                               const newUserIds = prev.userIds.filter(id => id !== (user._id || user.id));
-                              console.log('User removed:', user._id || user.id, 'New userIds:', newUserIds);
+
                               return { ...prev, userIds: newUserIds };
                             });
                           }
