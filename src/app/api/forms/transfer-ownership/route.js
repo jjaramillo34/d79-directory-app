@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import FormSubmission from '@/models/FormSubmission';
 import User from '@/models/User';
+import mongoose from 'mongoose';
 
 export async function POST(request) {
   try {
@@ -11,6 +12,8 @@ export async function POST(request) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+
 
     // Only Super Admins (Level 5) can transfer form ownership
     if (session.user.level !== 5) {
@@ -57,6 +60,22 @@ export async function POST(request) {
     form.principalName = newOwner.name;
     form.principalEmail = newOwner.email;
     
+    // Get the current user's ID from session
+    const currentUserId = session.user.id || session.user._id || session.user.email;
+    
+
+    
+    if (!currentUserId) {
+      return NextResponse.json({ 
+        error: 'Unable to identify current user for transfer history' 
+      }, { status: 400 });
+    }
+
+    // Convert string ID to ObjectId if needed
+    const currentUserObjectId = typeof currentUserId === 'string' && currentUserId.length === 24 
+      ? new mongoose.Types.ObjectId(currentUserId)
+      : currentUserId;
+
     // Add transfer history
     if (!form.transferHistory) {
       form.transferHistory = [];
@@ -64,32 +83,49 @@ export async function POST(request) {
     form.transferHistory.push({
       from: oldOwnerId,
       to: newOwner._id,
-      transferredBy: session.user._id,
+      transferredBy: currentUserObjectId,
       transferredAt: new Date(),
       reason: 'Super Admin transfer'
     });
 
-    await form.save();
-
-    // Log activity for both users
-    if (oldOwnerId) {
-      const oldOwner = await User.findById(oldOwnerId);
-      if (oldOwner) {
-        oldOwner.logActivity('form_ownership_transferred', 'form', {
-          formId: form._id,
-          transferredTo: newOwner.email,
-          transferredBy: session.user.email
-        });
-        await oldOwner.save();
-      }
+    try {
+      await form.save();
+    } catch (saveError) {
+      console.error('Error saving form with transfer history:', saveError);
+      return NextResponse.json({ 
+        error: 'Failed to save form transfer history',
+        details: saveError.message
+      }, { status: 500 });
     }
 
-    newOwner.logActivity('form_ownership_received', 'form', {
-      formId: form._id,
-      transferredFrom: oldOwnerId ? 'Super Admin' : 'System',
-      transferredBy: session.user.email
-    });
-    await newOwner.save();
+    // Log activity for both users
+    try {
+      if (oldOwnerId) {
+        const oldOwner = await User.findById(oldOwnerId);
+        if (oldOwner) {
+          oldOwner.activityLog.push({
+            action: 'form_ownership_transferred',
+            target: 'form',
+            details: `Form transferred to ${newOwner.email} by ${session.user.email}`,
+            timestamp: new Date()
+          });
+          oldOwner.lastActivity = new Date();
+          await oldOwner.save();
+        }
+      }
+
+      newOwner.activityLog.push({
+        action: 'form_ownership_received',
+        target: 'form',
+        details: `Form ownership received from ${session.user.email}`,
+        timestamp: new Date()
+      });
+      newOwner.lastActivity = new Date();
+      await newOwner.save();
+    } catch (activityError) {
+      console.error('Error logging activity:', activityError);
+      // Don't fail the entire operation if activity logging fails
+    }
 
     return NextResponse.json({ 
       success: true, 
