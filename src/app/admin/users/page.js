@@ -129,9 +129,8 @@ function AdminUsersPageContent() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      console.log('Fetched users:', data.users);
-      setUsers(data.users || []);
+             const data = await response.json();
+       setUsers(data.users || []);
     } catch (error) {
       console.error('Error fetching users:', error);
       // Show empty state if API fails
@@ -393,17 +392,15 @@ function AdminUsersPageContent() {
 
   // AG Grid column definitions
   const columnDefs = [
-    {
-      headerName: '',
-      field: 'select',
-      headerCheckboxSelection: true,
-      checkboxSelection: true,
-      width: 50,
-      pinned: 'left',
-      sortable: false,
-      filter: false,
-      resizable: false
-    },
+         {
+       headerName: '',
+       field: 'select',
+       width: 50,
+       pinned: 'left',
+       sortable: false,
+       filter: false,
+       resizable: false
+     },
     {
       headerName: 'Name',
       field: 'name',
@@ -527,11 +524,24 @@ function AdminUsersPageContent() {
     flex: 1
   };
 
-  // AG Grid row selection
-  const onSelectionChanged = () => {
-    const selectedRows = gridApi?.getSelectedRows() || [];
-    setSelectedUsers(selectedRows);
-  };
+     // AG Grid row selection
+   const onSelectionChanged = () => {
+     const selectedRows = gridApi?.getSelectedRows() || [];
+     setSelectedUsers(selectedRows);
+   };
+
+   // AG Grid options with modern configuration
+   const gridOptions = {
+     rowSelection: {
+       type: 'multiple',
+       headerCheckbox: true,
+       checkboxes: true,
+       enableClickSelection: false
+     },
+     pagination: true,
+     paginationPageSize: 20,
+     paginationPageSizeSelector: [20, 50, 100]
+   };
 
   const getLevelBadge = (level) => {
     const levelConfig = {
@@ -805,25 +815,22 @@ function AdminUsersPageContent() {
               <p>No users found.</p>
             </div>
           ) : (
-                         <div className="ag-theme-alpine w-full" style={{ height: '600px' }}>
-              <AgGridReact
-                columnDefs={columnDefs}
-                rowData={users}
-                defaultColDef={defaultColDef}
-                onGridReady={onGridReady}
-                onSelectionChanged={onSelectionChanged}
-                rowSelection="multiple"
-                pagination={true}
-                paginationPageSize={10}
-                domLayout="normal"
-                suppressRowClickSelection={true}
-                suppressCellFocus={true}
-                className="w-full"
-                rowHeight={60}
-                headerHeight={50}
-                                 theme="legacy"
-              />
-            </div>
+                                      <div className="ag-theme-alpine w-full" style={{ height: '600px' }}>
+               <AgGridReact
+                 columnDefs={columnDefs}
+                 rowData={users}
+                 defaultColDef={defaultColDef}
+                 onGridReady={onGridReady}
+                 onSelectionChanged={onSelectionChanged}
+                 gridOptions={gridOptions}
+                 domLayout="normal"
+                 suppressCellFocus={true}
+                 className="w-full"
+                 rowHeight={60}
+                 headerHeight={50}
+                 theme="legacy"
+               />
+             </div>
           )}
         </div>
 

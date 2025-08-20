@@ -114,14 +114,18 @@ export async function POST(request) {
         }
       }
 
-      newOwner.activityLog.push({
-        action: 'form_ownership_received',
-        target: 'form',
-        details: `Form ownership received from ${session.user.email}`,
-        timestamp: new Date()
-      });
-      newOwner.lastActivity = new Date();
-      await newOwner.save();
+      // Refresh newOwner to avoid version conflicts
+      const refreshedNewOwner = await User.findById(newOwner._id);
+      if (refreshedNewOwner) {
+        refreshedNewOwner.activityLog.push({
+          action: 'form_ownership_received',
+          target: 'form',
+          details: `Form ownership received from ${session.user.email}`,
+          timestamp: new Date()
+        });
+        refreshedNewOwner.lastActivity = new Date();
+        await refreshedNewOwner.save();
+      }
     } catch (activityError) {
       console.error('Error logging activity:', activityError);
       // Don't fail the entire operation if activity logging fails
