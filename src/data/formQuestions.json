@@ -24,7 +24,7 @@
                     "id": "question1",
                     "title": "Principal Letter",
                     "placeholder": "Please provide a brief letter or statement from the principal outlining the school's commitment to implementing this comprehensive plan...",
-                    "type": "textarea",
+                    "type": "checkbox",
                     "required": false,
                     "description": "This letter demonstrates leadership commitment to the school plan implementation."
                 }
