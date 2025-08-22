@@ -593,8 +593,15 @@ function AdminUsersPageContent() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4">
             <div className="mb-4 lg:mb-0">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">User Management</h1>
-              <p className="text-gray-600">Manage user accounts and permissions</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {session?.user?.level === 4 ? 'School User Management' : 'All Users Management'}
+              </h1>
+              <p className="text-gray-600">
+                {session?.user?.level === 4 
+                  ? 'Manage user accounts and permissions for your school' 
+                  : 'Manage all user accounts and permissions across all schools'
+                }
+              </p>
               <div className="flex items-center mt-2">
                 <span className="text-sm text-gray-500">Logged in as: </span>
                 <span className="ml-2 inline-flex items-center px-2 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-md border border-amber-200">
@@ -680,7 +687,7 @@ function AdminUsersPageContent() {
               }`}
             >
               <Users className="w-4 h-4 inline mr-2" />
-              User Management
+              {session?.user?.level === 4 ? 'School Users' : 'All Users'}
             </button>
             <button
               onClick={() => setActiveTab('collaboration')}

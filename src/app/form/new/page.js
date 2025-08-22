@@ -14,6 +14,7 @@ import {
   Loader2,
   Info
 } from 'lucide-react';
+import PrincipalEmailAutocomplete from '@/components/PrincipalEmailAutocomplete';
 
 export default function NewFormPage() {
   const router = useRouter();
@@ -220,12 +221,11 @@ export default function NewFormPage() {
                   <User className="w-4 h-4 inline mr-2 text-gray-500" />
                   Assign to Principal (Optional)
                 </label>
-                <input
-                  type="email"
+                <PrincipalEmailAutocomplete
                   value={initialOwnerEmail}
-                  onChange={(e) => setInitialOwnerEmail(e.target.value)}
+                  onChange={setInitialOwnerEmail}
                   placeholder="Enter principal email to assign ownership (must be Level 4)"
-                  className="block w-full px-3 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  className="block w-full"
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   Leave blank to create the form for yourself, or enter a Level 4 principal's email to assign ownership immediately.

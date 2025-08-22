@@ -262,7 +262,7 @@ export default function DashboardPage() {
             </Link>
           )}
           
-          {isAdmin && (
+          {userLevel === 4 && (
             <Link
               href="/admin/submissions"
               className="card group overflow-hidden relative"
@@ -273,16 +273,16 @@ export default function DashboardPage() {
                   <Search size={48} />
                 </div>
                 <h3 className="text-2xl font-bold mb-3 text-secondary-800 group-hover:text-white transition-colors duration-300">
-                  Review Submissions
+                  Review School Submissions
                 </h3>
                 <p className="text-base text-secondary-600 group-hover:text-white/90 transition-colors duration-300">
-                  Review and approve pending forms
+                  Review and approve forms from your school
                 </p>
               </div>
             </Link>
           )}
           
-          {isAdmin && (
+          {userLevel === 4 && (
             <Link
               href="/admin/users"
               className="card group overflow-hidden relative"
@@ -293,16 +293,76 @@ export default function DashboardPage() {
                   <Users size={48} />
                 </div>
                 <h3 className="text-2xl font-bold mb-3 text-secondary-800 group-hover:text-white transition-colors duration-300">
-                  Manage Users
+                  Manage School Users
                 </h3>
                 <p className="text-base text-secondary-600 group-hover:text-white/90 transition-colors duration-300">
-                  Manage user access and permissions
+                  Manage users from your school
                 </p>
               </div>
             </Link>
           )}
           
-          {isAdmin && (
+          {userLevel === 4 && (
+            <Link
+              href="/admin/users?tab=collaboration"
+              className="card group overflow-hidden relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10 p-8 text-center">
+                <div className="text-5xl mb-4 text-emerald-500 group-hover:text-white transition-colors duration-300">
+                  <Users size={48} />
+                </div>
+                <h3 className="text-2xl font-bold mb-3 text-secondary-800 group-hover:text-white transition-colors duration-300">
+                  Collaboration Dashboard
+                </h3>
+                <p className="text-base text-secondary-600 group-hover:text-white/90 transition-colors duration-300">
+                  Manage staff and share forms for collaboration
+                </p>
+              </div>
+            </Link>
+          )}
+          
+          {userLevel === 5 && (
+            <Link
+              href="/admin/submissions"
+              className="card group overflow-hidden relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-success-500 to-success-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10 p-8 text-center">
+                <div className="text-5xl mb-4 text-success-500 group-hover:text-white transition-colors duration-300">
+                  <Search size={48} />
+                </div>
+                <h3 className="text-2xl font-bold mb-3 text-secondary-800 group-hover:text-white transition-colors duration-300">
+                  Review All Submissions
+                </h3>
+                <p className="text-base text-secondary-600 group-hover:text-white/90 transition-colors duration-300">
+                  Review and approve all forms across all schools
+                </p>
+              </div>
+            </Link>
+          )}
+          
+          {userLevel === 5 && (
+            <Link
+              href="/admin/users"
+              className="card group overflow-hidden relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10 p-8 text-center">
+                <div className="text-5xl mb-4 text-success-500 group-hover:text-white transition-colors duration-300">
+                  <Users size={48} />
+                </div>
+                <h3 className="text-2xl font-bold mb-3 text-secondary-800 group-hover:text-white transition-colors duration-300">
+                  Manage All Users
+                </h3>
+                <p className="text-base text-secondary-600 group-hover:text-white/90 transition-colors duration-300">
+                  Manage all users across all schools
+                </p>
+              </div>
+            </Link>
+          )}
+          
+          {userLevel === 5 && (
             <Link
               href="/admin/users?tab=collaboration"
               className="card group overflow-hidden relative"
@@ -324,12 +384,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Admin Statistics */}
-        {isAdmin && (
+        {(userLevel === 4 || userLevel === 5) && (
           <div className="card mb-12 overflow-hidden">
             <div className="card-header flex justify-between items-center">
               <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                 <BarChart3 size={28} />
-                Submission Statistics
+                {userLevel === 4 ? 'School Submission Statistics' : 'All Schools Submission Statistics'}
               </h2>
               <div className="flex gap-2">
                 <button

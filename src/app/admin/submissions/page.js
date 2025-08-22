@@ -25,6 +25,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import FormViewer from '../../../components/FormViewer'; // Added import for FormViewer
+import PrincipalEmailAutocomplete from '../../../components/PrincipalEmailAutocomplete';
 
 export default function AdminSubmissionsPage() {
   const router = useRouter();
@@ -431,10 +432,13 @@ export default function AdminSubmissionsPage() {
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-6">
             <div className="mb-4 lg:mb-0">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Admin - Form Submissions
+                {session?.user?.level === 4 ? 'School Form Submissions' : 'All Form Submissions'}
               </h1>
               <p className="text-gray-600">
-                Review and approve school plan submissions
+                {session?.user?.level === 4 
+                  ? 'Review and approve submissions from your school' 
+                  : 'Review and approve all school plan submissions across all schools'
+                }
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -921,12 +925,10 @@ export default function AdminSubmissionsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   New Owner Email *
                 </label>
-                <input
-                  type="email"
+                <PrincipalEmailAutocomplete
                   value={transferData.newOwnerEmail}
-                  onChange={(e) => setTransferData({ newOwnerEmail: e.target.value })}
+                  onChange={(email) => setTransferData({ newOwnerEmail: email })}
                   placeholder="Enter principal email (must be Level 4)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1">

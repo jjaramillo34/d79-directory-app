@@ -15,7 +15,7 @@ async function GET(request) {
       });
     }
 
-    // Check if user is admin (Level 4)
+    // Check if user is admin (Level 4+)
     if (session.user.level < 4) {
       return new Response(JSON.stringify({ error: 'Forbidden: Admin access required' }), {
         status: 403,
@@ -26,10 +26,19 @@ async function GET(request) {
     // Connect to database
     await connectDB();
 
-    // Fetch all users
-    const users = await User.find({})
-      .select('name email level schoolName title isActive createdAt')
-      .sort({ createdAt: -1 });
+    let users;
+    
+    if (session.user.level === 5) {
+      // Super Admin can see all users
+      users = await User.find({})
+        .select('name email level schoolName title isActive createdAt')
+        .sort({ createdAt: -1 });
+    } else {
+      // Level 4 (Principal) can only see users from their school
+      users = await User.find({ schoolName: session.user.schoolName })
+        .select('name email level schoolName title isActive createdAt')
+        .sort({ createdAt: -1 });
+    }
 
     return new Response(JSON.stringify({ users }), {
       status: 200,
@@ -57,7 +66,7 @@ async function PUT(request) {
       });
     }
 
-    // Check if user is admin (Level 4)
+    // Check if user is admin (Level 4+)
     if (session.user.level < 4) {
       return new Response(JSON.stringify({ error: 'Forbidden: Admin access required' }), {
         status: 403,
@@ -76,6 +85,33 @@ async function PUT(request) {
 
     // Connect to database
     await connectDB();
+
+    // For Level 4 (Principal), check if they're trying to modify a user from their school
+    if (session.user.level === 4) {
+      const targetUser = await User.findById(userId);
+      if (!targetUser) {
+        return new Response(JSON.stringify({ error: 'User not found' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      
+      // Principal can only modify users from their own school
+      if (targetUser.schoolName !== session.user.schoolName) {
+        return new Response(JSON.stringify({ error: 'Forbidden: You can only modify users from your school' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      
+      // Principal cannot promote users to Level 5 (Super Admin)
+      if (level !== undefined && level === 5) {
+        return new Response(JSON.stringify({ error: 'Forbidden: You cannot promote users to Super Admin level' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     // Update user
     const updatedUser = await User.findByIdAndUpdate(
@@ -122,7 +158,7 @@ async function DELETE(request) {
       });
     }
 
-    // Check if user is admin (Level 4)
+    // Check if user is admin (Level 4+)
     if (session.user.level < 4) {
       return new Response(JSON.stringify({ error: 'Forbidden: Admin access required' }), {
         status: 403,
@@ -149,6 +185,25 @@ async function DELETE(request) {
 
     // Connect to database
     await connectDB();
+
+    // For Level 4 (Principal), check if they're trying to delete a user from their school
+    if (session.user.level === 4) {
+      const targetUser = await User.findById(userId);
+      if (!targetUser) {
+        return new Response(JSON.stringify({ error: 'User not found' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      
+      // Principal can only delete users from their own school
+      if (targetUser.schoolName !== session.user.schoolName) {
+        return new Response(JSON.stringify({ error: 'Forbidden: You can only delete users from your school' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     // Delete user
     const deletedUser = await User.findByIdAndDelete(userId);

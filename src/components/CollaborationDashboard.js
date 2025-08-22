@@ -204,7 +204,7 @@ const CollaborationDashboard = ({ user }) => {
             }`}
           >
             <Users className="w-4 h-4 inline mr-2" />
-            School Staff ({schoolUsers.length})
+            {user?.level === 4 ? 'School Staff' : 'All Staff'} ({schoolUsers.length})
           </button>
           <button
             onClick={() => setActiveTab('collaboration')}
@@ -215,7 +215,7 @@ const CollaborationDashboard = ({ user }) => {
             }`}
           >
             <Share2 className="w-4 h-4 inline mr-2" />
-            Form Collaboration
+            {user?.level === 4 ? 'School Collaboration' : 'Form Collaboration'}
           </button>
           <button
             onClick={() => setActiveTab('activity')}
@@ -226,7 +226,7 @@ const CollaborationDashboard = ({ user }) => {
             }`}
           >
             <Activity className="w-4 h-4 inline mr-2" />
-            Activity Log
+            {user?.level === 4 ? 'School Activity Log' : 'Activity Log'}
           </button>
         </nav>
       </div>
@@ -235,7 +235,9 @@ const CollaborationDashboard = ({ user }) => {
       {activeTab === 'users' && (
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">School Staff Management</h2>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {user?.level === 4 ? 'School Staff Management' : 'All Staff Management'}
+            </h2>
             <button
               onClick={() => setShowCreateUser(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center"
@@ -307,7 +309,9 @@ const CollaborationDashboard = ({ user }) => {
       {activeTab === 'collaboration' && (
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Form Collaboration</h2>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {user?.level === 4 ? 'School Form Collaboration' : 'All Forms Collaboration'}
+            </h2>
             <button
               onClick={() => {
                 setSelectedForm(null);
@@ -324,7 +328,9 @@ const CollaborationDashboard = ({ user }) => {
           {/* Forms List */}
           <div className="bg-white rounded-lg shadow-md mb-6">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Your Forms</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                {user?.level === 4 ? 'School Forms' : 'All Forms'}
+              </h3>
             </div>
             <div className="divide-y divide-gray-200">
               {userForms.filter(form => !form.isShared).map((form) => (
@@ -353,7 +359,9 @@ const CollaborationDashboard = ({ user }) => {
           {/* Shared Forms List */}
           <div className="bg-white rounded-lg shadow-md">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Forms Shared With You</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                {user?.level === 4 ? 'Forms Shared With Your School' : 'Forms Shared With You'}
+              </h3>
             </div>
             <div className="divide-y divide-gray-200">
               {userForms.filter(form => form.isShared).length === 0 ? (
