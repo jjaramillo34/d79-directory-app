@@ -262,25 +262,7 @@ export default function DashboardPage() {
             </Link>
           )}
           
-          {userLevel === 4 && (
-            <Link
-              href="/admin/submissions"
-              className="card group overflow-hidden relative"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-success-500 to-success-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative z-10 p-8 text-center">
-                <div className="text-5xl mb-4 text-success-500 group-hover:text-white transition-colors duration-300">
-                  <Search size={48} />
-                </div>
-                <h3 className="text-2xl font-bold mb-3 text-secondary-800 group-hover:text-white transition-colors duration-300">
-                  Review School Submissions
-                </h3>
-                <p className="text-base text-secondary-600 group-hover:text-white/90 transition-colors duration-300">
-                  Review and approve forms from your school
-                </p>
-              </div>
-            </Link>
-          )}
+
           
           {userLevel === 4 && (
             <Link
@@ -834,7 +816,7 @@ export default function DashboardPage() {
                   <div className="text-center py-8 border-t-2 border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
                     <p className="text-base text-gray-600 font-medium">
                       Showing first 10 submissions. 
-                      {isAdmin && (
+                      {userLevel === 5 && (
                         <Link href="/admin/submissions" className="ml-3 text-blue-600 no-underline font-semibold px-4 py-2 bg-white rounded-lg border-2 border-gray-200 transition-all duration-300 hover:bg-blue-600 hover:text-white hover:-translate-y-1">
                           View all submissions →
                         </Link>

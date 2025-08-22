@@ -6,7 +6,7 @@
             "title": "Table of Contents",
             "questions": [
                 {
-                    "id": "question1",
+                    "id": "screen1question1",
                     "title": "Table of Contents",
                     "placeholder": "Please confirm that you have reviewed the table of contents for this comprehensive school plan.",
                     "type": "checkbox",
@@ -21,7 +21,7 @@
             "title": "Principal Letter",
             "questions": [
                 {
-                    "id": "question1",
+                    "id": "screen2question1",
                     "title": "Principal Letter",
                     "placeholder": "Please provide a brief letter or statement from the principal outlining the school's commitment to implementing this comprehensive plan...",
                     "type": "checkbox",

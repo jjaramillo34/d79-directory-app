@@ -67,16 +67,23 @@ export default function AdminSubmissionsPage() {
       return;
     }
 
-    // Check if user has admin permission (Level 4+)
-    if (session.user.level < 4) {
-      router.push('/dashboard');
+    // Only Level 5 (Super Admin) can access this global admin view
+    // Level 4 (Principals) should use their school-specific views
+    if (session.user.level < 5) {
+      if (session.user.level === 4) {
+        // Redirect principals to their school-specific dashboard or users page
+        router.push('/admin/users?tab=collaboration');
+      } else {
+        // Other levels go to main dashboard
+        router.push('/dashboard');
+      }
       return;
     }
   }, [session, status, router]);
 
   // Fetch submissions
   useEffect(() => {
-    if (session?.user?.level >= 4) {
+    if (session?.user?.level === 5) {
       fetchSubmissions();
     }
   }, [session]);
@@ -398,8 +405,8 @@ export default function AdminSubmissionsPage() {
     );
   }
 
-  // Check if user is admin (Level 4+)
-  if (session.user.level < 4) {
+  // Check if user is Super Admin (Level 5)
+  if (session.user.level < 5) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white p-8 rounded-lg shadow-lg text-center">
@@ -410,15 +417,29 @@ export default function AdminSubmissionsPage() {
             Access Denied
           </h1>
           <p className="text-gray-600 mb-6">
-            You need Level 4 (Admin) access or higher to view this page.
+            {session.user.level === 4 
+              ? 'This page is for Super Admins only. As a Principal, please use your school-specific views from the dashboard.'
+              : 'You need Level 5 (Super Admin) access to view this page.'
+            }
           </p>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center px-6 py-3 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors duration-200"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
-          </Link>
+          <div className="flex gap-3 justify-center">
+            {session.user.level === 4 && (
+              <Link
+                href="/admin/users?tab=collaboration"
+                className="inline-flex items-center px-6 py-3 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors duration-200"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Go to School Management
+              </Link>
+            )}
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center px-6 py-3 bg-gray-500 text-white text-sm font-medium rounded-lg hover:bg-gray-600 transition-colors duration-200"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -432,13 +453,10 @@ export default function AdminSubmissionsPage() {
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-6">
             <div className="mb-4 lg:mb-0">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {session?.user?.level === 4 ? 'School Form Submissions' : 'All Form Submissions'}
+                All Form Submissions
               </h1>
               <p className="text-gray-600">
-                {session?.user?.level === 4 
-                  ? 'Review and approve submissions from your school' 
-                  : 'Review and approve all school plan submissions across all schools'
-                }
+                Review and approve all school plan submissions across all schools
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
