@@ -15,6 +15,7 @@ import {
   Info
 } from 'lucide-react';
 import PrincipalEmailAutocomplete from '@/components/PrincipalEmailAutocomplete';
+import SCHOOL_NAMES from '@/constants/schools';
 
 export default function NewFormPage() {
   const router = useRouter();
@@ -201,16 +202,21 @@ export default function NewFormPage() {
                 <Building2 className="w-4 h-4 inline mr-2 text-gray-500" />
                 School Name <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
+              <select
                 value={schoolName}
                 onChange={(e) => setSchoolName(e.target.value)}
-                placeholder="Enter the full name of your school"
                 className="block w-full px-3 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                 required
-              />
+              >
+                <option value="">Select your school...</option>
+                {SCHOOL_NAMES.map((schoolNameOption) => (
+                  <option key={schoolNameOption} value={schoolNameOption}>
+                    {schoolNameOption}
+                  </option>
+                ))}
+              </select>
               <p className="mt-1 text-xs text-gray-500">
-                Please enter the official name of your school as it appears in DOE records.
+                Please select the official name of your school from the list above.
               </p>
             </div>
 

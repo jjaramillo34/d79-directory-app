@@ -29,6 +29,7 @@ import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import CollaborationDashboard from '../../../components/CollaborationDashboard';
+import SCHOOL_NAMES from '../../../constants/schools';
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -1009,17 +1010,24 @@ function AdminUsersPageContent() {
                    </select>
                 </div>
 
-                                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                     School Name
-                   </label>
-                   <input
-                     type="text"
-                     value={formData.schoolName}
-                     onChange={(e) => setFormData({...formData, schoolName: e.target.value})}
-                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                   />
-                 </div>
+                                                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    School Name *
+                  </label>
+                  <select
+                    value={formData.schoolName}
+                    onChange={(e) => setFormData({...formData, schoolName: e.target.value})}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select a school...</option>
+                    {SCHOOL_NAMES.map((schoolName) => (
+                      <option key={schoolName} value={schoolName}>
+                        {schoolName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
                  <div>
                    <label className="block text-sm font-medium text-gray-700 mb-2">

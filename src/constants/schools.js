@@ -1,0 +1,31 @@
+export const SCHOOL_NAMES = [
+  'Adult Education - School 1',
+  'Adult Education - School 2',
+  'Adult Education - School 3',
+  'Adult Education - School 4',
+  'Adult Education - School 5',
+  'Adult Education - School 6',
+  'Adult Education - School 7',
+  'Adult Education - School 8',
+  'Alternate Learning Centers - Bronx',
+  'Alternate Learning Centers - Brooklyn East',
+  'Alternate Learning Centers - Brooklyn West/SI',
+  'Alternate Learning Centers - Manhattan',
+  'Alternate Learning Centers - Queens',
+  'Coop Tech',
+  'District 79 Administration',
+  'East River Academy',
+  'LYFE Program',
+  'Passages Academy',
+  'Pathways to Graduation Bronx',
+  'Pathways to Graduation Brooklyn',
+  'Pathways to Graduation Manhattan',
+  'Pathways to Graduation Queens',
+  'Pathways to Graduation Staten Island',
+  'ReStart Academy',
+  'The Judith S. Kaye HS',
+  'YABC - Bronx/Manhattan/SI',
+  'YABC - Brooklyn/Queens'
+];
+
+export default SCHOOL_NAMES;
