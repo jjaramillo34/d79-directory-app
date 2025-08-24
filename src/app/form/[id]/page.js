@@ -306,7 +306,7 @@ export default function FormPage() {
     // Show save reminder after 3 minutes of inactivity
     const reminderTimeout = setTimeout(() => {
       setShowSaveReminder(true);
-    }, 180000); // 3 minutes
+    }, 360000); // 6 minutes
     setSaveReminderTimeout(reminderTimeout);
 
     // Debounced auto-save - only save after 5 seconds of inactivity
@@ -317,7 +317,7 @@ export default function FormPage() {
       if (Object.keys(currentStepData).length > 0) {
         autoSave();
       }
-    }, 3000000); // Increased to a least 5 minutes to prevent excessive API calls
+    }, 6000000); // Increased to a least 10 minutes to prevent excessive API calls
   };
 
   const getCurrentStepData = () => {
